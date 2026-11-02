@@ -20,6 +20,8 @@ const th: typeof en = {
     off: 'ดับ',
     from: 'ตั้งแต่',
     to: 'ถึง',
+    time: 'เวลา',
+    ok: 'ตกลง',
     device: 'อุปกรณ์',
     destination: 'ปลายทาง',
     provider: 'ผู้ให้บริการ',

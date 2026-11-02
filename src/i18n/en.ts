@@ -18,6 +18,8 @@ export default {
     off: 'OFF',
     from: 'From',
     to: 'To',
+    time: 'Time',
+    ok: 'OK',
     device: 'Device',
     destination: 'Destination',
     provider: 'Provider',
