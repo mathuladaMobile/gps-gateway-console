@@ -1,41 +1,59 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
-import { computed, ref, useSlots } from 'vue'
-import { usePermission } from '@/composables/usePermission'
-import { downloadCsv } from '@/utils/format'
+import dayjs from "dayjs";
+import { computed, ref, useSlots } from "vue";
+import { usePermission } from "@/composables/usePermission";
+import { downloadCsv, formatDateTime, isDateKey } from "@/utils/format";
 
 const props = defineProps<{
-  headers: { title: string; key: string; sortable?: boolean }[]
-  items: T[]
-  loading?: boolean
-  error?: string
+  headers: { title: string; key: string; sortable?: boolean }[];
+  items: T[];
+  loading?: boolean;
+  error?: string;
   /** Label of the load button; hidden when not set. */
-  searchText?: string
-}>()
+  searchText?: string;
+}>();
 
 const emit = defineEmits<{
-  search: []
-  add: []
-  edit: [item: T]
-  duplicate: [item: T]
-  delete: [item: T]
-}>()
+  search: [];
+  add: [];
+  edit: [item: T];
+  duplicate: [item: T];
+  delete: [item: T];
+}>();
 
-const slots = useSlots()
-const { can, item: menuItem } = usePermission()
-const filter = ref('')
+const slots = useSlots();
+const { can, item: menuItem } = usePermission();
+const filter = ref("");
 
-const rowActions = computed(() => can('update') || can('duplicate') || can('delete'))
+const rowActions = computed(
+  () => can("update") || can("duplicate") || can("delete"),
+);
 const allHeaders = computed(() =>
-  rowActions.value ? [...props.headers, { title: 'Actions', key: 'actions', sortable: false }] : props.headers,
-)
+  rowActions.value
+    ? [...props.headers, { title: "Actions", key: "actions", sortable: false }]
+    : props.headers,
+);
 // Pass item.* / header.* slots through to v-data-table
 const passSlots = computed(() =>
-  Object.keys(slots).filter((n) => n.startsWith('item.') || n.startsWith('header.') || n === 'expanded-row'),
-)
+  Object.keys(slots).filter(
+    (n) =>
+      n.startsWith("item.") || n.startsWith("header.") || n === "expanded-row",
+  ),
+);
+// Date/time columns without a custom slot are formatted with dayjs
+const dateSlots = computed(() =>
+  props.headers
+    .map((h) => `item.${h.key}`)
+    .filter((n) => isDateKey(n.slice(5)) && !passSlots.value.includes(n)),
+);
 
 function exportCsv() {
-  const date = new Date().toISOString().slice(0, 10)
-  downloadCsv(`${menuItem.value?.name ?? 'export'}-${date}.csv`, props.headers, props.items)
+  const stamp = dayjs().format("YYYYMMDD-HHmmss");
+  downloadCsv(
+    `${menuItem.value?.name ?? "export"}-${stamp}.csv`,
+    props.headers,
+    props.items,
+  );
 }
 </script>
 
@@ -45,7 +63,12 @@ function exportCsv() {
       <v-row dense align="center">
         <slot name="filters" />
         <v-col v-if="searchText" cols="auto">
-          <v-btn color="primary" prepend-icon="mdi-magnify" :loading="loading" @click="emit('search')">
+          <v-btn
+            color="primary"
+            prepend-icon="mdi-magnify"
+            :loading="loading"
+            @click="emit('search')"
+          >
             {{ searchText }}
           </v-btn>
         </v-col>
@@ -71,14 +94,30 @@ function exportCsv() {
           >
             Export
           </v-btn>
-          <v-btn v-if="can('add')" color="primary" prepend-icon="mdi-plus" @click="emit('add')">Add</v-btn>
+          <v-btn
+            v-if="can('add')"
+            color="primary"
+            prepend-icon="mdi-plus"
+            @click="emit('add')"
+            >Add</v-btn
+          >
         </v-col>
       </v-row>
-      <div v-if="menuItem?.retention" class="text-caption text-medium-emphasis mt-1">
+      <div
+        v-if="menuItem?.retention"
+        class="text-caption text-medium-emphasis mt-1"
+      >
         Data retention: {{ menuItem.retention }}
       </div>
       <slot name="alerts" />
-      <v-alert v-if="error" type="error" variant="tonal" density="compact" class="mt-3">{{ error }}</v-alert>
+      <v-alert
+        v-if="error"
+        type="error"
+        variant="tonal"
+        density="compact"
+        class="mt-3"
+        >{{ error }}</v-alert
+      >
     </v-card-text>
 
     <v-data-table
@@ -92,10 +131,32 @@ function exportCsv() {
       <template v-for="name in passSlots" :key="name" #[name]="slotProps">
         <slot :name="name" v-bind="slotProps ?? {}" />
       </template>
+      <template v-for="name in dateSlots" :key="name" #[name]="{ value }">
+        <span class="text-no-wrap">{{ formatDateTime(value) }}</span>
+      </template>
       <template #item.actions="{ item }">
-        <v-btn v-if="can('update')" icon="mdi-pencil" size="small" variant="text" @click="emit('edit', item)" />
-        <v-btn v-if="can('duplicate')" icon="mdi-content-copy" size="small" variant="text" @click="emit('duplicate', item)" />
-        <v-btn v-if="can('delete')" icon="mdi-delete" size="small" variant="text" color="error" @click="emit('delete', item)" />
+        <v-btn
+          v-if="can('update')"
+          icon="mdi-pencil"
+          size="small"
+          variant="text"
+          @click="emit('edit', item)"
+        />
+        <v-btn
+          v-if="can('duplicate')"
+          icon="mdi-content-copy"
+          size="small"
+          variant="text"
+          @click="emit('duplicate', item)"
+        />
+        <v-btn
+          v-if="can('delete')"
+          icon="mdi-delete"
+          size="small"
+          variant="text"
+          color="error"
+          @click="emit('delete', item)"
+        />
       </template>
     </v-data-table>
   </v-card>

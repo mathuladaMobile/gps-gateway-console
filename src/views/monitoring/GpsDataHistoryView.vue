@@ -4,9 +4,9 @@ import { providerApi, type Category, type DeviceFEPro, type ProviderSourceError 
 import DataTablePage from '@/components/DataTablePage.vue'
 import DateRangeFields from '@/components/DateRangeFields.vue'
 import { useLoader } from '@/composables/useLoader'
-import { defaultRange, headersFrom, retentionMin, toApiDate } from '@/utils/format'
+import { defaultRange, headersFrom, rangeHours, retentionMin, toApiDate } from '@/utils/format'
 
-const MAX_RANGE_MS = 24 * 3600_000
+const MAX_RANGE_HOURS = 24
 
 const categories = ref<Category[]>([])
 const sourceErrors = ref<ProviderSourceError[]>([])
@@ -28,7 +28,7 @@ async function load() {
     error.value = 'Please select provider and device'
     return
   }
-  if (new Date(to.value).getTime() - new Date(from.value).getTime() > MAX_RANGE_MS) {
+  if (rangeHours(from.value, to.value) > MAX_RANGE_HOURS) {
     error.value = 'Date range must not exceed 24 hours'
     return
   }

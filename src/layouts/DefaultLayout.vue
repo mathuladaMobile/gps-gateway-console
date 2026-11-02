@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
 import KeepAliveView from '@/components/KeepAliveView.vue'
 import PageTabs from '@/components/PageTabs.vue'
@@ -11,9 +11,28 @@ import { useTabsStore } from '@/stores/tabs'
 const auth = useAuthStore()
 const tabs = useTabsStore()
 const router = useRouter()
+const route = useRoute()
 const theme = useTheme()
+const RAIL_KEY = 'gps-console-rail'
 const drawer = ref(true)
-const rail = ref(false)
+// Icon-only sidebar by default; remembered per browser
+const rail = ref(readRail())
+
+function readRail() {
+  try {
+    return localStorage.getItem(RAIL_KEY) !== 'false'
+  } catch {
+    return true
+  }
+}
+
+watch(rail, (v) => {
+  try {
+    localStorage.setItem(RAIL_KEY, String(v))
+  } catch {
+    // storage unavailable
+  }
+})
 
 // Hide items (and empty groups) the current role cannot access
 const visibleMenu = computed(() =>
@@ -42,7 +61,40 @@ async function logout() {
       class="py-3"
     />
     <v-divider />
-    <v-list density="compact" nav>
+
+    <!-- Rail: one icon per group, pages pop out on hover -->
+    <v-list v-if="rail" density="compact" nav>
+      <template v-for="group in visibleMenu" :key="group.title">
+        <v-list-item
+          v-if="group.items.length === 1 && group.title === 'Dashboard'"
+          v-tooltip:end="group.title"
+          :to="group.items[0].path"
+          :prepend-icon="group.icon"
+        />
+        <v-menu v-else open-on-hover location="end" :close-delay="100">
+          <template #activator="{ props }">
+            <v-list-item
+              v-bind="props"
+              :prepend-icon="group.icon"
+              :active="group.items.some((i) => i.name === route.name)"
+              color="primary"
+            />
+          </template>
+          <v-list density="compact" min-width="220">
+            <v-list-subheader>{{ group.title }}</v-list-subheader>
+            <v-list-item
+              v-for="item in group.items"
+              :key="item.name"
+              :to="item.path"
+              :title="item.title"
+              color="primary"
+            />
+          </v-list>
+        </v-menu>
+      </template>
+    </v-list>
+
+    <v-list v-else density="compact" nav>
       <template v-for="group in visibleMenu" :key="group.title">
         <v-list-item
           v-if="group.items.length === 1 && group.title === 'Dashboard'"
@@ -67,7 +119,13 @@ async function logout() {
 
   <v-app-bar flat border="b">
     <v-app-bar-nav-icon @click="drawer = !drawer" />
-    <v-btn icon="mdi-dock-left" variant="text" class="d-none d-md-flex" @click="rail = !rail" />
+    <v-btn
+      v-tooltip="rail ? 'Expand menu' : 'Minimize menu'"
+      :icon="rail ? 'mdi-chevron-double-right' : 'mdi-chevron-double-left'"
+      variant="text"
+      class="d-none d-md-flex"
+      @click="rail = !rail"
+    />
     <v-app-bar-title class="text-uppercase text-body-1">{{ $route.meta.group }}</v-app-bar-title>
     <v-spacer />
     <v-btn icon="mdi-theme-light-dark" variant="text" @click="toggleTheme" />

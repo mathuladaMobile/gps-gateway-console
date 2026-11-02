@@ -11,6 +11,7 @@ export default createVuetify({
     },
   },
   defaults: {
+    VBtn: { variant: 'tonal' },
     VCard: { rounded: 'lg' },
     VTextField: { variant: 'outlined', density: 'comfortable' },
     VSelect: { variant: 'outlined', density: 'comfortable' },
