@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { menuItems } from '@/config/menu'
+import { menu } from '@/config/menu'
 import type { Role } from '@/config/roles'
 import { useAuthStore } from '@/stores/auth'
+import { useTabsStore } from '@/stores/tabs'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 
 const router = createRouter({
@@ -18,12 +19,14 @@ const router = createRouter({
       component: DefaultLayout,
       redirect: '/dashboard',
       children: [
-        ...menuItems.map((item) => ({
-          path: item.path,
-          name: item.name,
-          component: item.component,
-          meta: { title: item.title, roles: item.roles, menu: item },
-        })),
+        ...menu.flatMap((group) =>
+          group.items.map((item) => ({
+            path: item.path,
+            name: item.name,
+            component: item.component,
+            meta: { title: item.title, group: group.title, roles: item.roles, menu: item },
+          })),
+        ),
         {
           path: '/forbidden',
           name: 'forbidden',
@@ -45,7 +48,8 @@ router.beforeEach((to) => {
   return true
 })
 
-router.afterEach((to) => {
+router.afterEach((to, _from, failure) => {
+  if (!failure) useTabsStore().open(to)
   document.title = to.meta.title ? `${to.meta.title} | GPS Gateway Console` : 'GPS Gateway Console'
 })
 
