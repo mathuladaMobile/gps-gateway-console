@@ -25,7 +25,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" search-text="Refresh" @search="load">
+  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" :search-text="$t('common.refresh')" @search="load">
     <template #filters>
       <v-col cols="12" md="3">
         <v-select
@@ -33,7 +33,7 @@ onMounted(async () => {
           :items="providers"
           :item-title="(p: CategoryResponse) => `${p.categoryName} (${p.categoryId})`"
           item-value="categoryId"
-          label="Provider"
+          :label="$t('common.provider')"
           density="compact"
           hide-details
           @update:model-value="load"

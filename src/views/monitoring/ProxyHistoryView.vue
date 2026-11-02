@@ -2,21 +2,22 @@
 import { onMounted, ref } from 'vue'
 import { deviceApi, type DestinationSelect, type DeviceProxyHistoryResponse, type ProxyList } from '@/api'
 import DataTablePage from '@/components/DataTablePage.vue'
+import { useI18n } from 'vue-i18n'
 import DateRangeFields from '@/components/DateRangeFields.vue'
 import SentStatusChip from '@/components/SentStatusChip.vue'
 import { useLoader } from '@/composables/useLoader'
 import { defaultRange, retentionMin, toApiDate } from '@/utils/format'
 
 const headers = [
-  { title: 'Record Time', key: 'recordTime' },
-  { title: 'Receive Time', key: 'receiveTime' },
-  { title: 'Sent Time', key: 'sentTime' },
-  { title: 'Serial No', key: 'serialNo' },
-  { title: 'Plate No', key: 'plateNo' },
-  { title: 'Proxy', key: 'proxyCode' },
-  { title: 'Type', key: 'typeLocation' },
-  { title: 'Sent Status', key: 'sentStatus' },
-  { title: 'Reply', key: 'sentMsgReply' },
+  { title: 'col.recordTime', key: 'recordTime' },
+  { title: 'col.receiveTime', key: 'receiveTime' },
+  { title: 'col.sentTime', key: 'sentTime' },
+  { title: 'col.serialNo', key: 'serialNo' },
+  { title: 'col.plateNo', key: 'plateNo' },
+  { title: 'col.proxy', key: 'proxyCode' },
+  { title: 'col.type', key: 'typeLocation' },
+  { title: 'col.sentStatus', key: 'sentStatus' },
+  { title: 'col.reply', key: 'sentMsgReply' },
 ]
 
 const destinations = ref<DestinationSelect[]>([])
@@ -26,10 +27,11 @@ const mId = ref<number>()
 const [from, to] = defaultRange(1).map((v) => ref(v))
 const items = ref<DeviceProxyHistoryResponse[]>([])
 const { loading, error, run } = useLoader()
+const { t } = useI18n()
 
 async function load() {
   if (tmId.value == null || mId.value == null) {
-    error.value = 'Please select destination and device'
+    error.value = t('monitoring.selectDestinationDevice')
     return
   }
   const body = { tmId: tmId.value, mId: mId.value, start: toApiDate(from.value), end: toApiDate(to.value) }
@@ -44,7 +46,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" search-text="Search" @search="load">
+  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" :search-text="$t('common.search')" @search="load">
     <template #filters>
       <v-col cols="12" md="2">
         <v-select
@@ -52,7 +54,7 @@ onMounted(async () => {
           :items="destinations"
           :item-title="(d: DestinationSelect) => `${d.name} (${d.proxyCode})`"
           item-value="tmId"
-          label="Destination"
+          :label="$t('common.destination')"
           density="compact"
           hide-details
         />
@@ -63,7 +65,7 @@ onMounted(async () => {
           :items="devices"
           :item-title="(d: ProxyList) => `${d.serialNo} - ${d.plateNo}`"
           item-value="mId"
-          label="Device"
+          :label="$t('common.device')"
           variant="outlined"
           density="compact"
           hide-details

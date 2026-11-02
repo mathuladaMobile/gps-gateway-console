@@ -3,12 +3,12 @@ import { ref } from 'vue'
 import DataTablePage from '@/components/DataTablePage.vue'
 
 const headers = [
-  { title: 'IMEI', key: 'imei' },
-  { title: 'Device Name', key: 'deviceName' },
-  { title: 'Proxy', key: 'proxyName' },
-  { title: 'Destination', key: 'destination' },
-  { title: 'Schedule', key: 'schedule' },
-  { title: 'Status', key: 'status' },
+  { title: 'col.imei', key: 'imei' },
+  { title: 'col.deviceName', key: 'deviceName' },
+  { title: 'col.proxy', key: 'proxyName' },
+  { title: 'col.destination', key: 'destination' },
+  { title: 'col.schedule', key: 'schedule' },
+  { title: 'col.status', key: 'status' },
 ]
 
 // TODO: load from API

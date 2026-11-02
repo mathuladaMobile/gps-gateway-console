@@ -12,7 +12,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('@/views/auth/LoginView.vue'),
-      meta: { public: true, title: 'Login' },
+      meta: { public: true, title: 'login.title' },
     },
     {
       path: '/',
@@ -24,14 +24,15 @@ const router = createRouter({
             path: item.path,
             name: item.name,
             component: item.component,
-            meta: { title: item.title, group: group.title, roles: item.roles, menu: item },
+            // title and group are i18n keys
+            meta: { title: `menu.${item.name}`, group: `group.${group.id}`, roles: item.roles, menu: item },
           })),
         ),
         {
           path: '/forbidden',
           name: 'forbidden',
           component: () => import('@/views/ForbiddenView.vue'),
-          meta: { title: 'Forbidden' },
+          meta: { title: 'forbidden.pageTitle' },
         },
       ],
     },
@@ -50,7 +51,6 @@ router.beforeEach((to) => {
 
 router.afterEach((to, _from, failure) => {
   if (!failure) useTabsStore().open(to)
-  document.title = to.meta.title ? `${to.meta.title} | GPS Gateway Console` : 'GPS Gateway Console'
 })
 
 export default router

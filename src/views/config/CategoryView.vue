@@ -5,13 +5,13 @@ import DataTablePage from '@/components/DataTablePage.vue'
 import { useLoader } from '@/composables/useLoader'
 
 const headers = [
-  { title: 'Category ID', key: 'categoryId' },
-  { title: 'Category Name', key: 'categoryName' },
-  { title: 'Chunk Size', key: 'chunk_size' },
-  { title: 'Limit Location', key: 'limit_location' },
-  { title: 'Max Back', key: 'maxback' },
-  { title: 'Safety Time', key: 'safety_time' },
-  { title: 'Updated At', key: 'updatedAt' },
+  { title: 'col.categoryId', key: 'categoryId' },
+  { title: 'col.categoryName', key: 'categoryName' },
+  { title: 'col.chunkSize', key: 'chunk_size' },
+  { title: 'col.limitLocation', key: 'limit_location' },
+  { title: 'col.maxBack', key: 'maxback' },
+  { title: 'col.safetyTime', key: 'safety_time' },
+  { title: 'col.updatedAt', key: 'updatedAt' },
 ]
 
 const categories = ref<CategoryResponse[]>([])
@@ -26,5 +26,5 @@ onMounted(load)
 </script>
 
 <template>
-  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" search-text="Refresh" @search="load" />
+  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" :search-text="$t('common.refresh')" @search="load" />
 </template>

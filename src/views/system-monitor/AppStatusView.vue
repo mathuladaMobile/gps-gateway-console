@@ -25,14 +25,14 @@ onMounted(load)
         <v-card-text>
           <v-alert v-if="error" type="error" variant="tonal" density="compact">{{ error }}</v-alert>
           <v-list v-else-if="health" density="compact">
-            <v-list-item title="Status">
+            <v-list-item :title="$t('appStatus.status')">
               <template #append>
                 <v-chip size="small" :color="health.status === 'running' ? 'success' : 'error'">{{ health.status }}</v-chip>
               </template>
             </v-list-item>
-            <v-list-item title="App" :subtitle="health.app" />
-            <v-list-item title="Environment" :subtitle="health.APP_ENV" />
-            <v-list-item title="Go Version" :subtitle="health.go_version" />
+            <v-list-item :title="$t('appStatus.app')" :subtitle="health.app" />
+            <v-list-item :title="$t('appStatus.environment')" :subtitle="health.APP_ENV" />
+            <v-list-item :title="$t('appStatus.goVersion')" :subtitle="health.go_version" />
           </v-list>
         </v-card-text>
       </v-card>

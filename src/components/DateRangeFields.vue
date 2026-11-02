@@ -6,9 +6,9 @@ defineProps<{ min?: string }>()
 
 <template>
   <v-col cols="6" md="2">
-    <v-text-field v-model="from" type="datetime-local" label="From" density="compact" hide-details :min="min" />
+    <v-text-field v-model="from" type="datetime-local" :label="$t('common.from')" density="compact" hide-details :min="min" />
   </v-col>
   <v-col cols="6" md="2">
-    <v-text-field v-model="to" type="datetime-local" label="To" density="compact" hide-details :min="from" />
+    <v-text-field v-model="to" type="datetime-local" :label="$t('common.to')" density="compact" hide-details :min="from" />
   </v-col>
 </template>

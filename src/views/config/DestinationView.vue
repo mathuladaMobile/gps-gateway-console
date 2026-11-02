@@ -5,11 +5,11 @@ import DataTablePage from '@/components/DataTablePage.vue'
 import { useLoader } from '@/composables/useLoader'
 
 const headers = [
-  { title: 'tmId', key: 'tmId' },
-  { title: 'Name', key: 'name' },
-  { title: 'Proxy Code', key: 'proxyCode' },
-  { title: 'Type', key: 'tmType' },
-  { title: 'Last Sent At', key: 'lastsentAt' },
+  { title: 'col.tmId', key: 'tmId' },
+  { title: 'col.name', key: 'name' },
+  { title: 'col.proxyCode', key: 'proxyCode' },
+  { title: 'col.type', key: 'tmType' },
+  { title: 'col.lastSentAt', key: 'lastsentAt' },
 ]
 
 const items = ref<DestinationSelect[]>([])
@@ -23,5 +23,5 @@ onMounted(load)
 </script>
 
 <template>
-  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" search-text="Refresh" @search="load" />
+  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" :search-text="$t('common.refresh')" @search="load" />
 </template>

@@ -313,6 +313,18 @@ export interface DeviceMasterResponse {
   provincesError: string
 }
 
+// TODO: not in the API yet; field names follow DevicesResponse until the backend defines them
+export interface DeviceMasterSaveRequest {
+  serialNo: string
+  categoryId: string
+  GPSModelCode: number | null
+  plateNo: string
+  provinceCode: number | null
+  accountId: string
+  deviceId: string
+  chassis: string
+}
+
 export interface TransMonitorInfo {
   devices: DevicesResponse[]
 }

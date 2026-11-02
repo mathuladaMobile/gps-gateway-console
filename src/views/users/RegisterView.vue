@@ -3,12 +3,12 @@ import { ref } from 'vue'
 import DataTablePage from '@/components/DataTablePage.vue'
 
 const headers = [
-  { title: 'Username', key: 'username' },
-  { title: 'Full Name', key: 'fullName' },
-  { title: 'Email', key: 'email' },
-  { title: 'Role', key: 'role' },
-  { title: 'Status', key: 'status' },
-  { title: 'Created At', key: 'createdAt' },
+  { title: 'col.username', key: 'username' },
+  { title: 'col.fullName', key: 'fullName' },
+  { title: 'col.email', key: 'email' },
+  { title: 'col.role', key: 'role' },
+  { title: 'col.status', key: 'status' },
+  { title: 'col.createdAt', key: 'createdAt' },
 ]
 
 // TODO: load from API

@@ -2,26 +2,27 @@
 import { onMounted, ref } from 'vue'
 import { deviceApi, type DLTHistoryResponse, type ProxyList } from '@/api'
 import DataTablePage from '@/components/DataTablePage.vue'
+import { useI18n } from 'vue-i18n'
 import DateRangeFields from '@/components/DateRangeFields.vue'
 import SentStatusChip from '@/components/SentStatusChip.vue'
 import { useLoader } from '@/composables/useLoader'
 import { defaultRange, retentionMin, toApiDate } from '@/utils/format'
 
 const headers = [
-  { title: 'Record Time', key: 'recordTime' },
-  { title: 'Receive Time', key: 'receiveTime' },
-  { title: 'Sent Time', key: 'sentTime' },
-  { title: 'Serial No', key: 'serialNo' },
-  { title: 'Plate No', key: 'plateNo' },
-  { title: 'Latitude', key: 'lat' },
-  { title: 'Longitude', key: 'lon' },
-  { title: 'Speed', key: 'speed' },
-  { title: 'Course', key: 'course' },
-  { title: 'Engine', key: 'engineStatus' },
-  { title: 'Sats', key: 'numSats' },
-  { title: 'GSM RSSI', key: 'gsmRssi' },
-  { title: 'Driver', key: 'driverId' },
-  { title: 'Sent Status', key: 'sentStatus' },
+  { title: 'col.recordTime', key: 'recordTime' },
+  { title: 'col.receiveTime', key: 'receiveTime' },
+  { title: 'col.sentTime', key: 'sentTime' },
+  { title: 'col.serialNo', key: 'serialNo' },
+  { title: 'col.plateNo', key: 'plateNo' },
+  { title: 'col.latitude', key: 'lat' },
+  { title: 'col.longitude', key: 'lon' },
+  { title: 'col.speed', key: 'speed' },
+  { title: 'col.course', key: 'course' },
+  { title: 'col.engine', key: 'engineStatus' },
+  { title: 'col.sats', key: 'numSats' },
+  { title: 'col.gsmRssi', key: 'gsmRssi' },
+  { title: 'col.driver', key: 'driverId' },
+  { title: 'col.sentStatus', key: 'sentStatus' },
 ]
 
 const devices = ref<ProxyList[]>([])
@@ -29,10 +30,11 @@ const mId = ref<number>()
 const [from, to] = defaultRange(1).map((v) => ref(v))
 const items = ref<DLTHistoryResponse[]>([])
 const { loading, error, run } = useLoader()
+const { t } = useI18n()
 
 async function load() {
   if (mId.value == null) {
-    error.value = 'Please select a device'
+    error.value = t('monitoring.selectDevice')
     return
   }
   const body = { mId: mId.value, start: toApiDate(from.value), end: toApiDate(to.value) }
@@ -45,7 +47,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" search-text="Search" @search="load">
+  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" :search-text="$t('common.search')" @search="load">
     <template #filters>
       <v-col cols="12" md="3">
         <v-autocomplete
@@ -53,7 +55,7 @@ onMounted(async () => {
           :items="devices"
           :item-title="(d: ProxyList) => `${d.serialNo} - ${d.plateNo}`"
           item-value="mId"
-          label="Device"
+          :label="$t('common.device')"
           variant="outlined"
           density="compact"
           hide-details

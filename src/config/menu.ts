@@ -6,6 +6,7 @@ export type Action = 'view' | 'export' | 'add' | 'update' | 'delete' | 'duplicat
 export type Permissions = Partial<Record<Action, Role[]>>
 
 export interface MenuItem {
+  /** English fallback; the UI shows the i18n text */
   title: string
   path: string
   name: string
@@ -20,6 +21,9 @@ export interface MenuItem {
 }
 
 export interface MenuGroup {
+  /** i18n key under `group.` */
+  id: string
+  /** English fallback; the UI shows the i18n text */
   title: string
   icon: string
   items: MenuItem[]
@@ -36,6 +40,7 @@ const manage = (roles: Role[]): Permissions => ({
 // Source: GPS_Gateway_Console(Struct).csv - V.1.0.0
 export const menu: MenuGroup[] = [
   {
+    id: 'dashboard',
     title: 'Dashboard',
     icon: 'mdi-view-dashboard',
     items: [
@@ -46,6 +51,7 @@ export const menu: MenuGroup[] = [
     ],
   },
   {
+    id: 'monitoring',
     title: 'Monitoring',
     icon: 'mdi-monitor-eye',
     items: [
@@ -82,12 +88,13 @@ export const menu: MenuGroup[] = [
     ],
   },
   {
+    id: 'device',
     title: 'Device Management',
     icon: 'mdi-cellphone-link',
     items: [
       {
         title: 'Master', path: '/device/master', name: 'device-master',
-        roles: ALL, permissions: { ...viewExport(), ...manage(SA_A_OP) },
+        roles: ALL, permissions: { ...viewExport(), add: SA_A_OP, update: SA_A_OP, delete: SA_A_OP },
         component: () => import('@/views/device/MasterView.vue'),
       },
       {
@@ -103,6 +110,7 @@ export const menu: MenuGroup[] = [
     ],
   },
   {
+    id: 'proxy',
     title: 'Proxy',
     icon: 'mdi-swap-horizontal',
     items: [
@@ -114,6 +122,7 @@ export const menu: MenuGroup[] = [
     ],
   },
   {
+    id: 'users',
     title: 'User Management',
     icon: 'mdi-account-group',
     items: [
@@ -132,6 +141,7 @@ export const menu: MenuGroup[] = [
     ],
   },
   {
+    id: 'systemMonitor',
     title: 'System Monitor',
     icon: 'mdi-server',
     items: [
@@ -154,6 +164,7 @@ export const menu: MenuGroup[] = [
     ],
   },
   {
+    id: 'config',
     title: 'System Configuration',
     icon: 'mdi-cog',
     items: [
@@ -177,6 +188,7 @@ export const menu: MenuGroup[] = [
     ],
   },
   {
+    id: 'account',
     title: 'Account',
     icon: 'mdi-account-circle',
     items: [

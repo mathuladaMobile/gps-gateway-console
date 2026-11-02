@@ -1,10 +1,13 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import dayjs from "dayjs";
 import { computed, ref, useSlots } from "vue";
+import { useI18n } from "vue-i18n";
 import { usePermission } from "@/composables/usePermission";
+import { tr } from "@/i18n";
 import { downloadCsv, formatDateTime, isDateKey } from "@/utils/format";
 
 const props = defineProps<{
+  /** `title` may be an i18n key (e.g. `col.serialNo`); other titles are shown as is */
   headers: { title: string; key: string; sortable?: boolean }[];
   items: T[];
   loading?: boolean;
@@ -23,15 +26,23 @@ const emit = defineEmits<{
 
 const slots = useSlots();
 const { can, item: menuItem } = usePermission();
+const { t } = useI18n();
 const filter = ref("");
+
+const headers = computed(() =>
+  props.headers.map((h) => ({ ...h, title: tr(h.title) })),
+);
 
 const rowActions = computed(
   () => can("update") || can("duplicate") || can("delete"),
 );
 const allHeaders = computed(() =>
   rowActions.value
-    ? [...props.headers, { title: "Actions", key: "actions", sortable: false }]
-    : props.headers,
+    ? [
+        ...headers.value,
+        { title: t("common.actions"), key: "actions", sortable: false, align: "end" as const },
+      ]
+    : headers.value,
 );
 // Pass item.* / header.* slots through to v-data-table
 const passSlots = computed(() =>
@@ -46,12 +57,18 @@ const dateSlots = computed(() =>
     .map((h) => `item.${h.key}`)
     .filter((n) => isDateKey(n.slice(5)) && !passSlots.value.includes(n)),
 );
+// Remaining columns without a custom slot show "-" for null values
+const plainSlots = computed(() =>
+  props.headers
+    .map((h) => `item.${h.key}`)
+    .filter((n) => !isDateKey(n.slice(5)) && !passSlots.value.includes(n)),
+);
 
 function exportCsv() {
   const stamp = dayjs().format("YYYYMMDD-HHmmss");
   downloadCsv(
     `${menuItem.value?.name ?? "export"}-${stamp}.csv`,
-    props.headers,
+    headers.value,
     props.items,
   );
 }
@@ -65,6 +82,7 @@ function exportCsv() {
         <v-col v-if="searchText" cols="auto">
           <v-btn
             color="primary"
+            variant="flat"
             prepend-icon="mdi-magnify"
             :loading="loading"
             @click="emit('search')"
@@ -76,7 +94,7 @@ function exportCsv() {
         <v-col cols="12" md="3">
           <v-text-field
             v-model="filter"
-            label="Filter"
+            :label="t('common.filter')"
             prepend-inner-icon="mdi-filter-variant"
             density="compact"
             clearable
@@ -87,19 +105,20 @@ function exportCsv() {
           <slot name="toolbar" />
           <v-btn
             v-if="can('export')"
-            variant="tonal"
-            prepend-icon="mdi-file-export"
+            variant="outlined"
+            prepend-icon="mdi-download"
             :disabled="!items.length"
             @click="exportCsv"
           >
-            Export
+            {{ t("common.export") }}
           </v-btn>
           <v-btn
             v-if="can('add')"
             color="primary"
+            variant="flat"
             prepend-icon="mdi-plus"
             @click="emit('add')"
-            >Add</v-btn
+            >{{ t("common.add") }}</v-btn
           >
         </v-col>
       </v-row>
@@ -107,7 +126,7 @@ function exportCsv() {
         v-if="menuItem?.retention"
         class="text-caption text-medium-emphasis mt-1"
       >
-        Data retention: {{ menuItem.retention }}
+        {{ t("common.dataRetention", { retention: menuItem.retention }) }}
       </div>
       <slot name="alerts" />
       <v-alert
@@ -132,31 +151,39 @@ function exportCsv() {
         <slot :name="name" v-bind="slotProps ?? {}" />
       </template>
       <template v-for="name in dateSlots" :key="name" #[name]="{ value }">
-        <span class="text-no-wrap">{{ formatDateTime(value) }}</span>
+        <span class="text-no-wrap">{{ formatDateTime(value) ?? "-" }}</span>
+      </template>
+      <template v-for="name in plainSlots" :key="name" #[name]="{ value }">
+        {{ value ?? "-" }}
       </template>
       <template #item.actions="{ item }">
-        <v-btn
-          v-if="can('update')"
-          icon="mdi-pencil"
-          size="small"
-          variant="text"
-          @click="emit('edit', item)"
-        />
-        <v-btn
-          v-if="can('duplicate')"
-          icon="mdi-content-copy"
-          size="small"
-          variant="text"
-          @click="emit('duplicate', item)"
-        />
-        <v-btn
-          v-if="can('delete')"
-          icon="mdi-delete"
-          size="small"
-          variant="text"
-          color="error"
-          @click="emit('delete', item)"
-        />
+        <div class="d-flex justify-end ga-1">
+          <v-btn
+            v-if="can('update')"
+            v-tooltip="t('common.update')"
+            icon="mdi-pencil-outline"
+            size="small"
+            variant="outlined"
+            @click="emit('edit', item)"
+          />
+          <v-btn
+            v-if="can('duplicate')"
+            v-tooltip="t('common.duplicate')"
+            icon="mdi-content-copy"
+            size="small"
+            variant="outlined"
+            @click="emit('duplicate', item)"
+          />
+          <v-btn
+            v-if="can('delete')"
+            v-tooltip="t('common.delete')"
+            icon="mdi-delete-outline"
+            size="small"
+            variant="outlined"
+            color="error"
+            @click="emit('delete', item)"
+          />
+        </div>
       </template>
     </v-data-table>
   </v-card>

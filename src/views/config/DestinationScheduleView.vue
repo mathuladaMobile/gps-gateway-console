@@ -3,11 +3,11 @@ import { ref } from 'vue'
 import DataTablePage from '@/components/DataTablePage.vue'
 
 const headers = [
-  { title: 'Destination', key: 'destination' },
-  { title: 'Cron / Interval', key: 'schedule' },
-  { title: 'Start', key: 'start' },
-  { title: 'End', key: 'end' },
-  { title: 'Active', key: 'active' },
+  { title: 'col.destination', key: 'destination' },
+  { title: 'col.cronInterval', key: 'schedule' },
+  { title: 'col.start', key: 'start' },
+  { title: 'col.end', key: 'end' },
+  { title: 'col.active', key: 'active' },
 ]
 
 // TODO: load from API

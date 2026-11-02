@@ -4,9 +4,10 @@ import App from './App.vue'
 import router from './router'
 import vuetify from './plugins/vuetify'
 import { setUnauthorizedHandler } from './api'
+import { i18n } from './i18n'
 import { useAuthStore } from './stores/auth'
 
-const app = createApp(App).use(createPinia()).use(router).use(vuetify)
+const app = createApp(App).use(createPinia()).use(i18n).use(router).use(vuetify)
 
 // Session expired and refresh failed -> back to login
 setUnauthorizedHandler(() => {

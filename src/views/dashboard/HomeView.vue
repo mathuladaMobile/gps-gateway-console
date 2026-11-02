@@ -11,9 +11,9 @@ const platforms = ref([
 
 // 2. Proxy status summary
 const statusSummary = ref([
-  { title: 'Online', count: 0, color: 'success', icon: 'mdi-check-circle' },
-  { title: 'Delayed', count: 0, color: 'warning', icon: 'mdi-clock-alert' },
-  { title: 'Offline', count: 0, color: 'error', icon: 'mdi-close-circle' },
+  { title: 'online', count: 0, color: 'success', icon: 'mdi-check-circle' },
+  { title: 'delayed', count: 0, color: 'warning', icon: 'mdi-clock-alert' },
+  { title: 'offline', count: 0, color: 'error', icon: 'mdi-close-circle' },
 ])
 </script>
 
@@ -26,7 +26,7 @@ const statusSummary = ref([
             <v-icon :icon="s.icon" size="32" />
           </v-avatar>
           <div>
-            <div class="text-medium-emphasis">Proxy {{ s.title }}</div>
+            <div class="text-medium-emphasis">{{ $t('dashboard.proxyStatus', { status: $t(`dashboard.${s.title}`) }) }}</div>
             <div class="text-h4">{{ s.count }}</div>
           </div>
         </v-card-text>
@@ -34,12 +34,12 @@ const statusSummary = ref([
     </v-col>
 
     <v-col cols="12">
-      <v-card title="Proxy by Platform">
+      <v-card :title="$t('dashboard.byPlatform')">
         <v-table>
           <thead>
             <tr>
-              <th>Platform</th>
-              <th class="text-right">Proxies</th>
+              <th>{{ $t('dashboard.platform') }}</th>
+              <th class="text-right">{{ $t('dashboard.proxies') }}</th>
             </tr>
           </thead>
           <tbody>

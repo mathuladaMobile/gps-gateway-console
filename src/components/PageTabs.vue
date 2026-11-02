@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { tr } from '@/i18n'
 import { HOME_PATH, useTabsStore, type PageTab } from '@/stores/tabs'
 
 const route = useRoute()
@@ -51,7 +52,7 @@ function closeAll() {
       @auxclick.middle.prevent="close(tab)"
       @contextmenu.prevent="openMenu($event, tab)"
     >
-      {{ tab.title }}
+      {{ tr(tab.title) }}
       <v-btn
         icon="mdi-close"
         size="x-small"
@@ -65,10 +66,10 @@ function closeAll() {
 
   <v-menu v-model="menu" :target="menuTarget" location="bottom start">
     <v-list v-if="menuTab" density="compact">
-      <v-list-item prepend-icon="mdi-refresh" title="Reload" @click="tabs.reload(menuTab.name)" />
-      <v-list-item prepend-icon="mdi-close" title="Close" @click="close(menuTab)" />
-      <v-list-item prepend-icon="mdi-close-box-multiple-outline" title="Close Others" @click="closeOthers(menuTab)" />
-      <v-list-item prepend-icon="mdi-close-circle-multiple-outline" title="Close All" @click="closeAll" />
+      <v-list-item prepend-icon="mdi-refresh" :title="$t('tabs.reload')" @click="tabs.reload(menuTab.name)" />
+      <v-list-item prepend-icon="mdi-close" :title="$t('tabs.close')" @click="close(menuTab)" />
+      <v-list-item prepend-icon="mdi-close-box-multiple-outline" :title="$t('tabs.closeOthers')" @click="closeOthers(menuTab)" />
+      <v-list-item prepend-icon="mdi-close-circle-multiple-outline" :title="$t('tabs.closeAll')" @click="closeAll" />
     </v-list>
   </v-menu>
 </template>

@@ -1,8 +1,12 @@
-import { getData, request } from './http'
+import { ApiError, getData, request } from './http'
 import type * as T from './types'
+import { i18n } from '@/i18n'
 
 export * from './http'
 export type * from './types'
+
+/** Placeholder for endpoints the backend doesn't provide yet. */
+const notAvailable = <R>(): Promise<R> => Promise.reject(new ApiError(i18n.global.t('common.apiNotAvailable'), 501))
 
 export const authApi = {
   login: (username: string, password: string) =>
@@ -42,6 +46,16 @@ export const destinationApi = {
 export const deviceApi = {
   lastStatus: () => getData<T.DeviceLastStatusResponse[]>('/device/laststatus', { method: 'POST' }),
   master: () => getData<T.DeviceMasterResponse>('/device/master'),
+  // TODO: no endpoints for these yet
+  /** Number of destinations each device is sending to, keyed by mId. */
+  masterDestinationCounts: () => notAvailable<Record<number, number>>(),
+  masterCreate: (_body: T.DeviceMasterSaveRequest) => notAvailable<T.MessageResponse>(),
+  /** Set deleted = 0 on a closed device and update its vehicle data. */
+  masterReopen: (_mId: number, _body: T.DeviceMasterSaveRequest) => notAvailable<T.MessageResponse>(),
+  /** A changed serialNo creates a new device (new mId) with the vehicle data copied. */
+  masterUpdate: (_mId: number, _body: T.DeviceMasterSaveRequest) => notAvailable<T.MessageResponse>(),
+  /** Set deleted = 1; history is kept. */
+  masterDelete: (_mId: number) => notAvailable<T.MessageResponse>(),
 
   proxyLastStatus: (body: T.ProxyLastStatusRequest) =>
     getData<T.ProxyLastStatus[]>('/device/proxy/laststatus', { method: 'POST', body }),
