@@ -1,5 +1,6 @@
 import type { Component } from "vue";
 import { ALL, SA, SA_A, SA_A_OP, type Role } from "./roles";
+// ROLES: SA = Super Admin, SA_A = Super Admin + Admin, SA_A_OP = Super Admin + Admin + Operator, ALL = All roles
 
 /** Actions a page may expose; each maps to the roles allowed to perform it. */
 export type Action =
