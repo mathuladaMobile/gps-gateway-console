@@ -61,6 +61,7 @@ export default {
     'device-provider': 'Provider',
     'device-provider-wialon-lite': 'Provider (Wialon Lite)',
     'proxy-assign-destination': 'Assign Destination',
+    'proxy-support': 'Proxy Support',
     'user-register': 'Register',
     'user-change-password': 'Change User Password',
     'user-roles-permissions': 'Roles & Permissions',

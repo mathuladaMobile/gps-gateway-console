@@ -171,6 +171,14 @@ export const menu: MenuGroup[] = [
         permissions: manage(SA_A_OP),
         component: () => import("@/views/proxy/AssignDestinationView.vue"),
       },
+      {
+        title: "Proxy Support",
+        path: "/proxy/support",
+        name: "proxy-support",
+        roles: ALL,
+        permissions: viewExport(ALL),
+        component: () => import("@/views/proxy/ProxySupportView.vue"),
+      },
     ],
   },
   {

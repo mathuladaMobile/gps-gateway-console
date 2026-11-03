@@ -63,6 +63,7 @@ const th: typeof en = {
     'device-provider': 'ผู้ให้บริการ',
     'device-provider-wialon-lite': 'ผู้ให้บริการ (Wialon Lite)',
     'proxy-assign-destination': 'Assign Destination',
+    'proxy-support': 'Proxy Support',
     'user-register': 'ลงทะเบียนผู้ใช้',
     'user-change-password': 'เปลี่ยนรหัสผ่านผู้ใช้',
     'user-roles-permissions': 'บทบาทและสิทธิ์',
