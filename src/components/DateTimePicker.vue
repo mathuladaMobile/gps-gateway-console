@@ -13,7 +13,7 @@ const time = ref("00:00");
 
 const display = computed(() => {
   const d = dayjs(model.value);
-  return d.isValid() ? d.format("DD/MM/YY HH:mm") : "";
+  return d.isValid() ? d.format("DD MMM , HH:mm") : "";
 });
 const minDate = computed(() =>
   props.min ? dayjs(props.min).format("YYYY-MM-DD") : undefined,
