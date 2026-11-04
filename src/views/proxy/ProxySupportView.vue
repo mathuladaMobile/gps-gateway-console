@@ -1,19 +1,26 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import DataTablePage from '@/components/DataTablePage.vue'
+import { ref, onMounted } from "vue";
+import DataTablePage from "@/components/DataTablePage.vue";
+import { destinationApi, type DestinationInfoResponse } from "@/api";
+import { useLoader } from "@/composables/useLoader";
 
 const headers = [
-  { title: 'col.proxyCode', key: 'proxyCode' },
-  { title: 'col.name', key: 'name' },
-  { title: 'col.host', key: 'host' },
-  { title: 'col.port', key: 'port' },
-  { title: 'col.description', key: 'description' },
-  { title: 'col.status', key: 'status' },
-]
+  { title: "col.proxyCode", key: "proxyCode" },
+  { title: "col.name", key: "name" },
+  { title: "col.host", key: "host" },
+  { title: "col.port", key: "port" },
+  { title: "col.description", key: "description" },
+  { title: "col.status", key: "status" },
+];
 
-// TODO: load from API
-const items = ref<Record<string, unknown>[]>([])
-const loading = ref(false)
+const items = ref<DestinationInfoResponse[]>([]);
+const { loading, error, run } = useLoader();
+
+async function load() {
+  items.value = (await run(destinationApi.info)) ?? [];
+}
+
+onMounted(load);
 </script>
 
 <template>

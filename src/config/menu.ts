@@ -294,6 +294,9 @@ export const menu: MenuGroup[] = [
         path: "/account/change-password",
         name: "account-change-password",
         roles: ALL,
+        permissions: {
+          update: ALL,
+        },
         component: () => import("@/views/account/ChangePasswordView.vue"),
       },
     ],
