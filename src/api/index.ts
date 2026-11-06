@@ -73,6 +73,22 @@ export const deviceApi = {
     notAvailable<T.MessageResponse>(),
   /** Set deleted = 1; history is kept. */
   masterDelete: (_mId: number) => notAvailable<T.MessageResponse>(),
+  /** Destinations of a device, with sending / registration state. */
+  destinations: (_mId: number) =>
+    notAvailable<T.DeviceDestinationStatus[]>(),
+  /** OPEN / CLOSE a proxy that needs no registration (/device/destination/assign). */
+  destinationAssign: (_body: T.DestinationAssignRequest) =>
+    notAvailable<T.MessageResponse>(),
+  /** Register dialog fields; `fromMId` fills the form from another device (Duplicate). */
+  registerForm: (
+    _mId: number,
+    _proxyCode: string,
+    _action: T.RegisterAction,
+    _fromMId?: number,
+  ) => notAvailable<T.RegisterFormResponse>(),
+  /** ADD / UPDATE / REMOVE at the destination (/device/destination/register). */
+  destinationRegister: (_body: T.DestinationRegisterRequest) =>
+    notAvailable<T.MessageResponse>(),
 
   proxyLastStatus: (body: T.ProxyLastStatusRequest) =>
     getData<T.ProxyLastStatus[]>("/device/proxy/laststatus", {

@@ -5,6 +5,7 @@ import { createVuetify } from "vuetify";
 import { createVueI18nAdapter } from "vuetify/locale/adapters/vue-i18n";
 import { useI18n } from "vue-i18n";
 import { i18n } from "@/i18n";
+import Color from "vuetify/directives/color";
 
 // Colors follow the Device Management design reference
 export default createVuetify({
@@ -58,7 +59,12 @@ export default createVuetify({
   },
   defaults: {
     VBtn: { variant: "tonal", rounded: "lg" },
-    VCard: { rounded: "lg", flat: true, border: true },
+    VCard: {
+      rounded: "lg",
+      flat: true,
+      border: true,
+      background: "#FFFFFF",
+    },
     VAlert: { rounded: "lg", variant: "tonal" },
     VTextField: { variant: "outlined", density: "comfortable", rounded: "lg" },
     VSelect: { variant: "outlined", density: "comfortable", rounded: "lg" },

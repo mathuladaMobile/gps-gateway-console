@@ -339,6 +339,45 @@ export interface DeviceMasterSaveRequest {
   chassis: string;
 }
 
+// TODO: not in the API yet; shapes follow the Assign Destination design until the backend defines them
+export type AssignAction = "OPEN" | "CLOSE";
+export type RegisterAction = "ADD" | "UPDATE" | "REMOVE";
+
+/** A device's state on one proxy. */
+export interface DeviceDestinationStatus {
+  proxyCode: string;
+  active: boolean;
+  /** Still registered at the destination after a REMOVE that only stopped sending; reopening uses UPDATE. */
+  registered: boolean;
+}
+
+export interface DestinationAssignRequest {
+  mId: number;
+  proxyCode: string;
+  action: AssignAction;
+}
+
+export interface RegisterField {
+  key: string;
+  label: string;
+  value: string;
+  required: boolean;
+  placeholder?: string;
+}
+
+/** Register dialog data: `auto` is built from master / config, `form` is filled in by the user. */
+export interface RegisterFormResponse {
+  auto: { label: string; value: string }[];
+  form: RegisterField[];
+}
+
+export interface DestinationRegisterRequest {
+  mId: number;
+  proxyCode: string;
+  action: RegisterAction;
+  fields: Record<string, string>;
+}
+
 export interface TransMonitorInfo {
   devices: DevicesResponse[];
 }
