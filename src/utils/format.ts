@@ -1,6 +1,6 @@
 import dayjs, { type Dayjs } from 'dayjs'
 
-export const DATE_TIME_FORMAT = 'DD/MM/YYYY HH:mm:ss'
+export const DATE_TIME_FORMAT = 'DD/MM/YYYY HH:mm'
 const INPUT_FORMAT = 'YYYY-MM-DDTHH:mm'
 const API_FORMAT = 'YYYY-MM-DD HH:mm:ss'
 
@@ -27,6 +27,9 @@ export function retentionMin(retention?: string) {
   return toInputDate(dayjs().subtract(Number(m[1]), m[2] === 'D' ? 'day' : 'month'))
 }
 
+/** Longest from–to span allowed per history search. */
+export const MAX_RANGE_HOURS = 24
+
 /** Length of a datetime-local range in hours. */
 export function rangeHours(from: string, to: string) {
   return dayjs(to).diff(dayjs(from), 'hour', true)
@@ -50,16 +53,34 @@ export function headersFrom(items: Record<string, unknown>[]) {
   return Object.keys(items[0] ?? {}).map((key) => ({ title: key, key }))
 }
 
-function csvCell(v: unknown) {
-  const s = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+function excelCell(v: unknown) {
+  if (v == null) return ''
+  if (typeof v === 'number' || typeof v === 'boolean') return v
+  return typeof v === 'object' ? JSON.stringify(v) : String(v)
 }
 
-export function downloadCsv(filename: string, headers: { title: string; key: string }[], items: Record<string, unknown>[]) {
-  const cell = (i: Record<string, unknown>, key: string) => csvCell(isDateKey(key) ? formatDateTime(i[key]) : i[key])
-  const rows = [headers.map((h) => csvCell(h.title)), ...items.map((i) => headers.map((h) => cell(i, h.key)))]
-  // BOM so Excel opens Thai text correctly
-  const blob = new Blob(['﻿' + rows.map((r) => r.join(',')).join('\n')], { type: 'text/csv;charset=utf-8' })
+export async function downloadExcel(filename: string, headers: { title: string; key: string }[], items: Record<string, unknown>[]) {
+  // Loaded on demand to keep exceljs out of the main bundle
+  const { default: ExcelJS } = await import('exceljs')
+  const wb = new ExcelJS.Workbook()
+  const ws = wb.addWorksheet('Sheet1')
+  ws.columns = headers.map((h) => ({ header: h.title, key: h.key }))
+  for (const i of items) {
+    ws.addRow(headers.map((h) => excelCell(isDateKey(h.key) ? formatDateTime(i[h.key]) : i[h.key])))
+  }
+  ws.getRow(1).font = { bold: true }
+  ws.views = [{ state: 'frozen', ySplit: 1 }]
+  // Fit column widths to the longest value (capped)
+  ws.columns.forEach((col) => {
+    let max = 10
+    col.eachCell?.({ includeEmpty: false }, (c) => {
+      max = Math.max(max, String(c.value ?? '').length + 2)
+    })
+    col.width = Math.min(max, 60)
+  })
+
+  const buf = await wb.xlsx.writeBuffer()
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
   a.download = filename

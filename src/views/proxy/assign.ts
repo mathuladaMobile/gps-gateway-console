@@ -1,4 +1,4 @@
-import type { DestinationInfoResponse, Models } from "@/api";
+import type { DestinationInfoResponse } from "@/api";
 
 /**
  * How a proxy is opened / closed:
@@ -23,7 +23,8 @@ export interface Dest {
   proxyCode: string;
   kind: Kind;
   lines: string[];
-  models: Models[];
+  /** Names of the GPS models this proxy supports */
+  models: string[];
   /** The device's GPS model is in this proxy's ProxyDeviceType */
   supported: boolean;
   active: boolean;

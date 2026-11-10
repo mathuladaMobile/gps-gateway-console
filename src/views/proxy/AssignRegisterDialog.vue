@@ -1,23 +1,74 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { deviceApi, type RegisterAction, type RegisterFormResponse } from "@/api";
+import { deviceApi, type RegisterAction, type RegistrationInfo } from "@/api";
+import { formatDateTime } from "@/utils/format";
 
 export interface RegisterRequest {
   mId: number;
   proxyCode: string;
   action: RegisterAction;
-  /** Duplicate: fill the form from this device and show the new serial */
+  /** Duplicate: fill the form from this device's registration and show the new serial */
   fromMId?: number;
   newSerial?: string;
+}
+
+/** Popup data built from GET /device/destination/register/info */
+interface FormData {
+  /** Registration details, read-only */
+  auto: { label: string; value: string }[];
+  /** Editable fields: from the last payload, else the destination's defaults */
+  form: { key: string; value: string }[];
+  /** Last payload + defaults; edited values are written over it when sending */
+  base: Record<string, unknown>;
 }
 
 const props = defineProps<{ request: RegisterRequest | null }>();
 const emit = defineEmits<{ done: []; cancel: [] }>();
 
 const { t } = useI18n();
-const data = ref<RegisterFormResponse>();
+const data = ref<FormData>();
 const values = ref<Record<string, string>>({});
+
+const isPrimitive = (v: unknown) => v == null || ["string", "number", "boolean"].includes(typeof v);
+
+function toFormData(info: RegistrationInfo): FormData {
+  // The popup fills from the payload first; fields missing there use the defaults
+  const base = { ...(info.defaults ?? {}), ...(info.payload ?? {}) };
+  const show = (v: unknown) => (v == null || v === "" ? "-" : String(isPrimitive(v) ? formatDateTime(v) : JSON.stringify(v)));
+  const auto = [
+    { label: "mId", value: String(info.mId) },
+    { label: "registered", value: String(!!info.registered) },
+    { label: "regRef", value: show(info.regRef) },
+    { label: "lastAction", value: show(info.lastAction) },
+    { label: "registeredAt", value: `${show(info.registeredAt)} · ${show(info.registeredBy)}` },
+    { label: "updatedAt", value: `${show(info.updatedAt)} · ${show(info.updatedBy)}` },
+    // Nested values are sent unchanged, so they are only shown
+    ...Object.entries(base)
+      .filter(([, v]) => !isPrimitive(v))
+      .map(([k, v]) => ({ label: k, value: show(v) })),
+  ];
+  const form = Object.entries(base)
+    .filter(([, v]) => isPrimitive(v))
+    .map(([key, v]) => ({ key, value: v == null ? "" : String(v) }));
+  return { auto, form, base };
+}
+
+// Edited text goes back with the type the field had (number / boolean / string)
+function toPayload(d: FormData) {
+  const out: Record<string, unknown> = { ...d.base };
+  for (const { key } of d.form) {
+    const v = values.value[key] ?? "";
+    const orig = d.base[key];
+    out[key] =
+      typeof orig === "number" && v.trim() !== "" && !isNaN(Number(v))
+        ? Number(v)
+        : typeof orig === "boolean"
+          ? v.trim().toLowerCase() === "true"
+          : v;
+  }
+  return out;
+}
 const loading = ref(false);
 const saving = ref(false);
 const loadError = ref("");
@@ -31,7 +82,7 @@ watch(
     if (!r) return;
     loading.value = true;
     try {
-      const d = await deviceApi.registerForm(r.mId, r.proxyCode, r.action, r.fromMId);
+      const d = toFormData(await deviceApi.registerInfo(r.fromMId ?? r.mId, r.proxyCode));
       // REMOVE sends the registered data only
       if (r.action === "REMOVE") d.form = [];
       data.value = d;
@@ -45,9 +96,8 @@ watch(
 );
 
 const action = computed(() => props.request?.action ?? "ADD");
-const valid = computed(
-  () => !!data.value && data.value.form.every((f) => !f.required || values.value[f.key]?.trim()),
-);
+// The API does not mark required fields, so any loaded form can be sent
+const valid = computed(() => !!data.value);
 
 async function confirm() {
   const r = props.request;
@@ -59,7 +109,7 @@ async function confirm() {
       mId: r.mId,
       proxyCode: r.proxyCode,
       action: r.action,
-      fields: values.value,
+      ...(r.action !== "REMOVE" && data.value && { form: toPayload(data.value) }),
     });
     emit("done");
   } catch (e) {
@@ -109,8 +159,7 @@ async function confirm() {
                 v-for="f in data.form"
                 :key="f.key"
                 v-model="values[f.key]"
-                :label="f.required ? `${f.label} *` : f.label"
-                :placeholder="f.placeholder"
+                :label="f.key"
                 density="comfortable"
                 hide-details
               />

@@ -52,7 +52,7 @@ onMounted(async () => {
     :items="items"
     :loading="loading"
     :error="error"
-    :search-text="$t('common.search')"
+    :search-text="$t('common.find')"
     @search="load"
   >
     <template #filters>

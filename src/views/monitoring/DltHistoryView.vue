@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { deviceApi, type DLTHistoryResponse, type ProxyList } from '@/api'
 import DataTablePage from '@/components/DataTablePage.vue'
 import { useI18n } from 'vue-i18n'
 import DateRangeFields from '@/components/DateRangeFields.vue'
 import SentStatusChip from '@/components/SentStatusChip.vue'
 import { useLoader } from '@/composables/useLoader'
-import { defaultRange, retentionMin, toApiDate } from '@/utils/format'
+import { defaultRange, MAX_RANGE_HOURS, rangeHours, retentionMin, toApiDate } from '@/utils/format'
 
 const headers = [
   { title: 'col.recordTime', key: 'recordTime' },
@@ -32,9 +32,17 @@ const items = ref<DLTHistoryResponse[]>([])
 const { loading, error, run } = useLoader()
 const { t } = useI18n()
 
+const valid = computed(
+  () => mId.value != null && !!from.value && !!to.value && rangeHours(from.value, to.value) <= MAX_RANGE_HOURS,
+)
+
 async function load() {
   if (mId.value == null) {
     error.value = t('monitoring.selectDevice')
+    return
+  }
+  if (rangeHours(from.value, to.value) > MAX_RANGE_HOURS) {
+    error.value = t('monitoring.rangeTooLong', { hours: MAX_RANGE_HOURS })
     return
   }
   const body = { mId: mId.value, start: toApiDate(from.value), end: toApiDate(to.value) }
@@ -47,21 +55,31 @@ onMounted(async () => {
 </script>
 
 <template>
-  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" :search-text="$t('common.search')" @search="load">
+  <DataTablePage :headers="headers" :items="items" :loading="loading" :error="error" :search-text="$t('common.search')" :search-disabled="!valid" @search="load">
     <template #filters>
-      <v-col cols="12" md="3">
+      <v-col cols="12" sm="6" md="3">
         <v-autocomplete
           v-model="mId"
           :items="devices"
           :item-title="(d: ProxyList) => `${d.serialNo} - ${d.plateNo}`"
           item-value="mId"
           :label="$t('common.device')"
+          class="required"
           variant="outlined"
           density="compact"
-          hide-details
+          :hint="mId == null ? $t('common.required') : undefined"
+          :class="{ 'required-empty': mId == null }"
+          persistent-hint
+          hide-details="auto"
         />
       </v-col>
-      <DateRangeFields v-model:from="from" v-model:to="to" :min="retentionMin('6M')" />
+      <DateRangeFields
+        v-model:from="from"
+        v-model:to="to"
+        :min="retentionMin('6M')"
+        :max="new Date().toISOString()"
+        :max-hours="MAX_RANGE_HOURS"
+      />
     </template>
     <template #item.sentStatus="{ value }">
       <SentStatusChip :status="value" />

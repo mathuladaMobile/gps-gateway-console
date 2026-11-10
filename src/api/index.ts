@@ -73,22 +73,32 @@ export const deviceApi = {
     notAvailable<T.MessageResponse>(),
   /** Set deleted = 1; history is kept. */
   masterDelete: (_mId: number) => notAvailable<T.MessageResponse>(),
-  /** Destinations of a device, with sending / registration state. */
-  destinations: (_mId: number) =>
-    notAvailable<T.DeviceDestinationStatus[]>(),
-  /** OPEN / CLOSE a proxy that needs no registration (/device/destination/assign). */
-  destinationAssign: (_body: T.DestinationAssignRequest) =>
-    notAvailable<T.MessageResponse>(),
-  /** Register dialog fields; `fromMId` fills the form from another device (Duplicate). */
-  registerForm: (
-    _mId: number,
-    _proxyCode: string,
-    _action: T.RegisterAction,
-    _fromMId?: number,
-  ) => notAvailable<T.RegisterFormResponse>(),
-  /** ADD / UPDATE / REMOVE at the destination (/device/destination/register). */
-  destinationRegister: (_body: T.DestinationRegisterRequest) =>
-    notAvailable<T.MessageResponse>(),
+  /** Update the device's data (Assign Destination, part 1); without `mId` it creates a device. */
+  masterUpsert: (body: T.DeviceMasterUpsertRequest) =>
+    request<T.MessageResponse>("/device/master/upsert", {
+      method: "POST",
+      body,
+    }),
+  /** The device plus its state on every proxy (Assign Destination). */
+  destinationInfo: (mId: number) =>
+    getData<T.DeviceDestinationInfo>(`/device/destination/info/${mId}`),
+  /** OPEN / CLOSE a proxy that needs no registration. */
+  destinationAssign: (body: T.DestinationAssignRequest) =>
+    getData<T.DestinationAssignResult>("/device/destination/assign", {
+      method: "POST",
+      body,
+    }),
+  /** Latest registration of a device at a destination (fills the register popup). */
+  registerInfo: (mId: number, proxyCode: string) =>
+    getData<T.RegistrationInfo>(
+      `/device/destination/register/info?${new URLSearchParams({ mId: String(mId), proxyCode })}`,
+    ),
+  /** ADD / UPDATE / REMOVE at the destination (shared by every proxy). */
+  destinationRegister: (body: T.DestinationRegisterRequest) =>
+    getData<T.RegisterResult>("/device/destination/register", {
+      method: "POST",
+      body,
+    }),
 
   proxyLastStatus: (body: T.ProxyLastStatusRequest) =>
     getData<T.ProxyLastStatus[]>("/device/proxy/laststatus", {

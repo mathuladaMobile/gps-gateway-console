@@ -137,6 +137,7 @@ export const menu: MenuGroup[] = [
           add: SA_A_OP,
           update: SA_A_OP,
           delete: SA_A_OP,
+          duplicate: SA_A_OP,
         },
         component: () => import("@/views/device/MasterView.vue"),
       },

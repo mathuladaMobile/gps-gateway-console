@@ -5,7 +5,14 @@ import { toInputDate } from "@/utils/format";
 
 // Value is a datetime-local string `YYYY-MM-DDTHH:mm`
 const model = defineModel<string>({ required: true });
-const props = defineProps<{ label?: string; min?: string; max?: string }>();
+const props = defineProps<{
+  label?: string;
+  min?: string;
+  max?: string;
+  /** Recommendation shown under the field, e.g. the allowed range */
+  hint?: string;
+  required?: boolean;
+}>();
 
 const open = ref(false);
 const date = ref<Date>(new Date());
@@ -52,9 +59,13 @@ function apply() {
         v-bind="menuProps"
         :model-value="display"
         :label="label"
+        :class="{ required }"
         prepend-inner-icon="mdi-calendar-clock"
         density="compact"
-        hide-details
+        :hint="hint"
+        :persistent-hint="!!hint"
+        :hide-details="hint ? false : 'auto'"
+        :rules="required ? [() => !!model || $t('common.required')] : []"
         readonly
       />
     </template>

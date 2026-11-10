@@ -78,7 +78,7 @@ async function exec(s: Step) {
   switch (s.kind) {
     case "removeApi":
     case "removeOnly":
-      await deviceApi.destinationRegister({ mId: oldId, proxyCode: s.proxy, action: "REMOVE", fields: {} });
+      await deviceApi.destinationRegister({ mId: oldId, proxyCode: s.proxy, action: "REMOVE" });
       return true;
     case "close":
     case "open":
@@ -89,12 +89,7 @@ async function exec(s: Step) {
       });
       return true;
     case "add": {
-      // Destinations without user fields are registered straight away
-      const form = await deviceApi.registerForm(newId, s.proxy, "ADD", oldId);
-      if (!form.form.length) {
-        await deviceApi.destinationRegister({ mId: newId, proxyCode: s.proxy, action: "ADD", fields: {} });
-        return true;
-      }
+      // The popup fills from the old device's last registration at this destination
       return props.askRegister({
         mId: newId,
         proxyCode: s.proxy,

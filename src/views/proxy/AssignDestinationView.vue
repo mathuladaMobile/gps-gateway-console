@@ -7,8 +7,8 @@ import {
   destinationApi,
   type DestinationInfoResponse,
   type DestinationSelect,
-  type DeviceDestinationStatus,
   type DeviceMasterResponse,
+  type ProxyDestination,
   type DevicesResponse,
 } from "@/api";
 import { useLoader } from "@/composables/useLoader";
@@ -43,8 +43,16 @@ onMounted(load);
 
 // ---- 1. Device ----
 
-const serialInput = ref("");
+const serialInput = ref<string | null>(null);
 const device = ref<DevicesResponse>();
+// Closed devices can't be assigned, so they are not offered
+const serialOptions = computed(() => (master.value?.devices ?? []).filter((d) => !d.deleted));
+
+// Match serial or plate number
+function filterDevice(_value: string, query: string, item?: { raw: DevicesResponse }) {
+  const q = query.trim().toUpperCase();
+  return !!item && (item.raw.serialNo.toUpperCase().includes(q) || item.raw.plateNo?.toUpperCase().includes(q));
+}
 const searchError = ref("");
 const vehicle = reactive({ plateNo: "", provinceCode: null as number | null, chassis: "" });
 const savingVehicle = ref(false);
@@ -52,11 +60,12 @@ const vehicleSaved = ref(false);
 const vehicleError = ref("");
 
 async function search() {
-  const s = serialInput.value.trim();
+  const s = serialInput.value?.trim() ?? "";
   device.value = undefined;
   status.value = {};
-  statusError.value = message.value = "";
+  statusError.value = message.value = searchError.value = "";
   vehicleSaved.value = false;
+  if (!s) return;
   const d = master.value?.devices.find((x) => x.serialNo === s);
   if (!d) return (searchError.value = t("assign.notFound", { serial: s }));
   if (d.deleted) return (searchError.value = t("assign.deleted"));
@@ -71,7 +80,8 @@ async function saveVehicle() {
   savingVehicle.value = true;
   vehicleError.value = "";
   try {
-    await deviceApi.masterUpdate(d.mId, {
+    await deviceApi.masterUpsert({
+      mId: d.mId,
       serialNo: d.serialNo,
       categoryId: d.categoryId,
       GPSModelCode: d.GPSModelCode,
@@ -79,6 +89,8 @@ async function saveVehicle() {
       deviceId: d.deviceId,
       ...vehicle,
     });
+    // Keep the device list in step with what was saved
+    Object.assign(d, vehicle);
     vehicleSaved.value = true;
   } catch (e) {
     vehicleError.value = e instanceof Error ? e.message : String(e);
@@ -89,15 +101,18 @@ async function saveVehicle() {
 
 // ---- 2. Destinations ----
 
-const status = ref<Record<string, DeviceDestinationStatus>>({});
+// The device's state on each proxy, from /device/destination/info/:mId
+type Status = Pick<ProxyDestination, "proxyCode" | "sending" | "registered"> & Partial<ProxyDestination>;
+const status = ref<Record<string, Status>>({});
 const statusError = ref("");
 const busy = ref<string | null>(null);
 const message = ref("");
 
 async function loadStatus() {
+  statusError.value = "";
   try {
-    const list = await deviceApi.destinations(device.value!.mId);
-    status.value = Object.fromEntries(list.map((s) => [s.proxyCode, s]));
+    const res = await deviceApi.destinationInfo(device.value!.mId);
+    status.value = Object.fromEntries((res.supported ?? []).map((s) => [s.proxyCode, s]));
   } catch (e) {
     statusError.value = e instanceof Error ? e.message : String(e);
   }
@@ -108,9 +123,11 @@ const dests = computed<Dest[]>(() =>
     proxyCode: p.proxyCode,
     kind: kindOf(p),
     lines: lines.value.filter((l) => l.proxyCode === p.proxyCode).map((l) => l.tmType || l.name),
-    models: p.models ?? [],
-    supported: !!device.value && supports(p, device.value.GPSModelCode),
-    active: !!status.value[p.proxyCode]?.active,
+    // Prefer the API's answer; fall back to ProxyDeviceType from /destination/info
+    models: status.value[p.proxyCode]?.supportedModels ?? (p.models ?? []).map((m) => m.name),
+    supported:
+      status.value[p.proxyCode]?.supported ?? (!!device.value && supports(p, device.value.GPSModelCode)),
+    active: !!status.value[p.proxyCode]?.sending,
     registered: !!status.value[p.proxyCode]?.registered,
   })),
 );
@@ -124,12 +141,19 @@ const rows = computed(() => {
 });
 const active = computed(() => dests.value.filter((d) => d.active));
 
-function setStatus(proxyCode: string, patch: Partial<DeviceDestinationStatus>) {
-  const cur = status.value[proxyCode] ?? { proxyCode, active: false, registered: false };
-  status.value = { ...status.value, [proxyCode]: { ...cur, ...patch } };
+type Patch = { active?: boolean; registered?: boolean };
+
+// Show the change at once, then reload the real state from the API
+function setStatus(proxyCode: string, patch: Patch) {
+  const cur: Status = status.value[proxyCode] ?? { proxyCode, sending: false, registered: false };
+  status.value = {
+    ...status.value,
+    [proxyCode]: { ...cur, sending: patch.active ?? cur.sending, registered: patch.registered ?? cur.registered },
+  };
+  loadStatus();
 }
 
-async function act(proxyCode: string, fn: () => Promise<unknown>, patch: Partial<DeviceDestinationStatus>, msg: string) {
+async function act(proxyCode: string, fn: () => Promise<unknown>, patch: Patch, msg: string) {
   busy.value = proxyCode;
   message.value = "";
   try {
@@ -151,7 +175,7 @@ async function toggle(d: Dest) {
     if (d.kind === "none") {
       return act(p, () => deviceApi.destinationAssign({ mId, proxyCode: p, action: "OPEN" }), { active: true }, t("assign.msg.open", { proxy: p }));
     }
-    const action = d.registered ? "UPDATE" : "ADD";
+    const action = status.value[p]?.nextAction || (d.registered ? "UPDATE" : "ADD");
     if (await askRegister({ mId, proxyCode: p, action })) {
       setStatus(p, { active: true, registered: true });
       message.value = t("assign.msg.registered", { action, proxy: p });
@@ -166,7 +190,7 @@ async function toggle(d: Dest) {
   } else if (d.kind === "reg") {
     await act(
       p,
-      () => deviceApi.destinationRegister({ mId, proxyCode: p, action: "REMOVE", fields: {} }),
+      () => deviceApi.destinationRegister({ mId, proxyCode: p, action: "REMOVE" }),
       { active: false, registered: true },
       t("assign.msg.removeOnly", { proxy: p }),
     );
@@ -214,7 +238,7 @@ function linesText(d: Dest) {
 }
 
 function supportNote(d: Dest) {
-  const models = d.models.map((m) => m.name).join(", ") || t("assign.noSupportedModels");
+  const models = d.models.join(", ") || t("assign.noSupportedModels");
   const prefix = d.active ? t("assign.noLongerSupported", { model: modelName.value }) : "";
   return prefix + t("assign.supportedModels", { models });
 }
@@ -237,21 +261,26 @@ const KINDS: Kind[] = ["api", "reg", "none"];
           </v-btn>
         </div>
 
-        <div class="d-flex ga-2 align-start">
-          <v-text-field
-            v-model="serialInput"
-            :label="t('col.serial')"
-            class="font-mono"
-            density="comfortable"
-            prepend-inner-icon="mdi-magnify"
-            :error-messages="searchError"
-            :loading="loading"
-            @keyup.enter="search"
-          />
-          <v-btn variant="outlined" color="primary" height="48" :disabled="!serialInput.trim() || loading" @click="search">
-            {{ t("common.search") }}
-          </v-btn>
-        </div>
+        <v-autocomplete
+          v-model="serialInput"
+          :items="serialOptions"
+          item-title="serialNo"
+          item-value="serialNo"
+          :custom-filter="filterDevice"
+          :label="t('col.serial')"
+          class="font-mono"
+          density="comfortable"
+          prepend-inner-icon="mdi-magnify"
+          :error-messages="searchError"
+          :loading="loading"
+          clearable
+          auto-select-first
+          @update:model-value="search"
+        >
+          <template #item="{ props: itemProps, item }">
+            <v-list-item v-bind="itemProps" :subtitle="`${item.raw.plateNo} · ${item.raw.GPSModelName}`" />
+          </template>
+        </v-autocomplete>
 
         <template v-if="device">
           <div class="info-grid">

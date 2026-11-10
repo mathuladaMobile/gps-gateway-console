@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import {
   deviceApi,
   type DestinationSelect,
@@ -11,7 +11,13 @@ import { useI18n } from "vue-i18n";
 import DateRangeFields from "@/components/DateRangeFields.vue";
 import SentStatusChip from "@/components/SentStatusChip.vue";
 import { useLoader } from "@/composables/useLoader";
-import { defaultRange, retentionMin, toApiDate } from "@/utils/format";
+import {
+  defaultRange,
+  MAX_RANGE_HOURS,
+  rangeHours,
+  retentionMin,
+  toApiDate,
+} from "@/utils/format";
 
 const headers = [
   { title: "col.recordTime", key: "recordTime" },
@@ -34,9 +40,22 @@ const items = ref<DeviceProxyHistoryResponse[]>([]);
 const { loading, error, run } = useLoader();
 const { t } = useI18n();
 
+const valid = computed(
+  () =>
+    tmId.value != null &&
+    mId.value != null &&
+    !!from.value &&
+    !!to.value &&
+    rangeHours(from.value, to.value) <= MAX_RANGE_HOURS,
+);
+
 async function load() {
   if (tmId.value == null || mId.value == null) {
     error.value = t("monitoring.selectDestinationDevice");
+    return;
+  }
+  if (rangeHours(from.value, to.value) > MAX_RANGE_HOURS) {
+    error.value = t("monitoring.rangeTooLong", { hours: MAX_RANGE_HOURS });
     return;
   }
   const body = {
@@ -61,31 +80,40 @@ onMounted(async () => {
     :items="items"
     :loading="loading"
     :error="error"
-    :search-text="$t('common.search')"
+    :search-text="$t('common.find')"
+    :search-disabled="!valid"
     @search="load"
   >
     <template #filters>
-      <v-col cols="12" md="2">
+      <v-col cols="12" sm="6" md="3" lg="2">
         <v-select
           v-model="tmId"
           :items="destinations"
           :item-title="(d: DestinationSelect) => `${d.name} (${d.proxyCode})`"
           item-value="tmId"
           :label="$t('common.destination')"
+          class="required"
           density="compact"
-          hide-details
+          :hint="tmId == null ? $t('common.required') : undefined"
+          :class="{ 'required-empty': tmId == null }"
+          persistent-hint
+          hide-details="auto"
         />
       </v-col>
-      <v-col cols="12" md="3">
+      <v-col cols="12" sm="6" md="3">
         <v-autocomplete
           v-model="mId"
           :items="devices"
           :item-title="(d: ProxyList) => `${d.serialNo} - ${d.plateNo}`"
           item-value="mId"
           :label="$t('common.device')"
+          class="required"
           variant="outlined"
           density="compact"
-          hide-details
+          :hint="mId == null ? $t('common.required') : undefined"
+          :class="{ 'required-empty': mId == null }"
+          persistent-hint
+          hide-details="auto"
         />
       </v-col>
       <DateRangeFields
@@ -93,6 +121,7 @@ onMounted(async () => {
         v-model:to="to"
         :min="retentionMin('7D')"
         :max="new Date().toISOString()"
+        :max-hours="MAX_RANGE_HOURS"
       />
     </template>
     <template #item.sentStatus="{ value }">

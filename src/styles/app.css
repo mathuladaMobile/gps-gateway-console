@@ -56,3 +56,15 @@ a {
 .v-chip.v-chip--size-small {
   font-weight: 600;
 }
+
+/* Required fields: add class="required" to a Vuetify input to get a red * after its label */
+.v-input.required .v-label::after {
+  content: " *";
+  color: rgb(var(--v-theme-error));
+}
+
+/* "Required" hint under a required field that is still empty */
+.v-input.required-empty .v-messages {
+  color: rgb(var(--v-theme-error));
+  opacity: 1;
+}

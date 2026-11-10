@@ -86,8 +86,16 @@ export interface Category {
   deviceCount: number;
   updatedAt: string;
   FEL: DeviceFELite[];
-  FEP: DeviceFEPro[];
+  /** /provider/device/history returns only the serial for FEP (Pro) devices */
+  FEP: HistoryDeviceFEP[];
 }
+
+export interface HistoryDeviceFEP {
+  serialNumber: string;
+}
+
+/** A device in the GPS Data History picker: FEL has equipmentType, FEP only a serial */
+export type HistoryDevice = DeviceFELite | HistoryDeviceFEP;
 
 export interface ProviderSourceError {
   message: string;
@@ -96,7 +104,8 @@ export interface ProviderSourceError {
 
 export interface ProviderHistoryRequest {
   categoryId: string;
-  equipmentType: string;
+  /** Sent for FEL devices only; FEP devices have no equipmentType */
+  equipmentType?: string;
   serialNumber: string;
   start: string;
   end: string;
@@ -339,16 +348,54 @@ export interface DeviceMasterSaveRequest {
   chassis: string;
 }
 
-// TODO: not in the API yet; shapes follow the Assign Destination design until the backend defines them
+/** POST /device/master/upsert: with `mId` updates that device, without it creates one. */
+export interface DeviceMasterUpsertRequest extends DeviceMasterSaveRequest {
+  mId?: number;
+}
+
 export type AssignAction = "OPEN" | "CLOSE";
 export type RegisterAction = "ADD" | "UPDATE" | "REMOVE";
 
-/** A device's state on one proxy. */
-export interface DeviceDestinationStatus {
+/** One sending line (DeviceDestination) of a proxy. */
+export interface DestinationLine {
+  tmId: number;
+  tmType: string;
+  description: string;
+  sending: boolean;
+}
+
+/** A device's state on one proxy (dto.ProxyDestination). */
+export interface ProxyDestination {
   proxyCode: string;
-  active: boolean;
-  /** Still registered at the destination after a REMOVE that only stopped sending; reopening uses UPDATE. */
+  /** The device's GPS model is in this proxy's ProxyDeviceType; false = can only be closed */
+  supported: boolean;
+  /** GPS models this proxy supports, to show when `supported` is false */
+  supportedModels: string[];
+  /** Sending on at least one line */
+  sending: boolean;
+  /** Sending on only some lines (old data) */
+  partial: boolean;
+  lines: DestinationLine[];
+  /** From DestinationRegister (no row = false) */
+  requireRegister: boolean;
+  /** From DeviceRegistration */
   registered: boolean;
+  registeredAt: string | null;
+  /** ADD | UPDATE, only when requireRegister */
+  nextAction?: "ADD" | "UPDATE" | "";
+  canAdd: boolean;
+  canUpdate: boolean;
+  canRemove: boolean;
+}
+
+/** GET /device/destination/info/:mId */
+export interface DeviceDestinationInfo {
+  device: DevicesResponse;
+  supported: ProxyDestination[];
+  /** Proxies the device's model supports */
+  supportedCount: number;
+  /** Proxies currently sending */
+  sendingCount: number;
 }
 
 export interface DestinationAssignRequest {
@@ -357,25 +404,50 @@ export interface DestinationAssignRequest {
   action: AssignAction;
 }
 
-export interface RegisterField {
-  key: string;
-  label: string;
-  value: string;
-  required: boolean;
-  placeholder?: string;
+export interface DestinationAssignResult {
+  action: string;
+  /** DeviceDestination lines added / reopened / removed */
+  lines: number;
+  mId: number;
+  proxyCode: string;
 }
 
-/** Register dialog data: `auto` is built from master / config, `form` is filled in by the user. */
-export interface RegisterFormResponse {
-  auto: { label: string; value: string }[];
-  form: RegisterField[];
+/** GET /device/destination/register/info: the device's current registration at a destination. */
+export interface RegistrationInfo {
+  mId: number;
+  proxyCode: string;
+  registered: boolean;
+  /** ADD (not registered yet) | UPDATE (already registered) */
+  nextAction: "ADD" | "UPDATE";
+  lastAction: string | null;
+  regRef: string | null;
+  /** Last sent register data; fills the popup first */
+  payload: Record<string, unknown> | null;
+  /** Default values from the destination config, for fields missing from `payload` */
+  defaults: Record<string, unknown> | null;
+  registeredAt: string | null;
+  registeredBy: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
 }
 
+/** POST /device/destination/register */
 export interface DestinationRegisterRequest {
   mId: number;
   proxyCode: string;
   action: RegisterAction;
-  fields: Record<string, string>;
+  form?: Record<string, unknown>;
+}
+
+export interface RegisterResult {
+  action: string;
+  httpStatus: number;
+  /** DeviceRegistrationLog.logId */
+  logId: number;
+  mId: number;
+  proxyCode: string;
+  payload: unknown;
+  response: string;
 }
 
 export interface TransMonitorInfo {
