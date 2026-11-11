@@ -90,3 +90,22 @@ export async function downloadExcel(filename: string, headers: { title: string; 
   a.click()
   URL.revokeObjectURL(a.href)
 }
+
+function csvCell(v: unknown) {
+  const s = String(excelCell(v))
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+
+/** Download rows as CSV (UTF-8 with BOM so Excel shows Thai correctly). */
+export function downloadCsv(filename: string, headers: { title: string; key: string }[], items: Record<string, unknown>[]) {
+  const lines = [
+    headers.map((h) => csvCell(h.title)).join(','),
+    ...items.map((i) => headers.map((h) => csvCell(isDateKey(h.key) ? formatDateTime(i[h.key]) : i[h.key])).join(',')),
+  ]
+  const url = URL.createObjectURL(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}

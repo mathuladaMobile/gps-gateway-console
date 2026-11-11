@@ -175,9 +175,54 @@ export interface DeviceLastStatusResponse {
   recordTimeMI: string;
   recordTimeProvider: string;
   serialNo: string;
+  provinceName?: string;
+  /** ONLINE = ageSec ≤ summary.onlineMinutes · OFFLINE = older · NEVER = no recordTime yet */
+  status: DeviceLastStatus;
   swipeTime: string;
   swipeType: number;
   updatedAt: string;
+}
+
+export type DeviceLastStatus = "ONLINE" | "OFFLINE" | "NEVER";
+
+export interface DeviceLastStatusSummary {
+  total: number;
+  online: number;
+  offline: number;
+  never: number;
+  /** |diffMISec| > mismatchSec */
+  mismatchMI: number;
+  /** |diffProviderSec| > mismatchSec */
+  mismatchProvider: number;
+  mismatchSec: number;
+  onlineMinutes: number;
+}
+
+/** MI / Provider comparison data comes from a cache refreshed every ttlSec. */
+export interface DeviceLastStatusRef {
+  /** When the comparison data was last fetched, `YYYY-MM-DD HH:mm:ss` */
+  at: string;
+  ageSec: number;
+  ttlSec: number;
+}
+
+export interface ProviderSourceError {
+  /** WIALON | FEL | FEP | PROVINCE */
+  source: string;
+  message: string;
+}
+
+/** POST /device/laststatus */
+export interface DeviceLastStatusEnvelope {
+  success: boolean;
+  /** SUCCESS | PARTIAL_SUCCESS */
+  code: string;
+  count: number;
+  data: DeviceLastStatusResponse[];
+  summary?: DeviceLastStatusSummary;
+  ref?: DeviceLastStatusRef;
+  /** Set when code = PARTIAL_SUCCESS */
+  errors?: ProviderSourceError[];
 }
 
 export interface ProxyLastStatusRequest {
@@ -351,6 +396,8 @@ export interface DeviceMasterSaveRequest {
 /** POST /device/master/upsert: with `mId` updates that device, without it creates one. */
 export interface DeviceMasterUpsertRequest extends DeviceMasterSaveRequest {
   mId?: number;
+  /** 0 reopens a closed device, 1 closes it. */
+  deleted?: number;
 }
 
 export type AssignAction = "OPEN" | "CLOSE";

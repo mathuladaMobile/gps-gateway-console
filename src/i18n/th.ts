@@ -488,6 +488,39 @@ const th: typeof en = {
     },
     success: "{action} สำเร็จ",
   },
+  lastStatus: {
+    subtitle:
+      "สถานะล่าสุดของกล่องทุกตัว · Online = มีข้อมูลภายใน {min} นาที · เทียบเวลากับ MI / Provider เพื่อดูว่า gateway ตามทันไหม",
+    stat: {
+      total: "ทั้งหมด",
+      totalSub: "กล่องทั้งหมด",
+      online: "Online",
+      onlineSub: "ข้อมูลภายใน {min} นาที",
+      offline: "Offline",
+      offlineSub: "เกิน {min} นาที",
+      never: "ไม่เคยมีข้อมูล",
+      neverSub: "ยังไม่มี recordTime",
+      mismatch: "เวลาไม่ตรง MI / Provider",
+      mismatchSub: "MI {mi} · Provider {provider} (ต่างเกิน {sec} วิ)",
+    },
+    status: { ONLINE: "Online", OFFLINE: "Offline", NEVER: "ไม่เคยมีข้อมูล" },
+    search: "ค้นหา",
+    searchPlaceholder: "serialNo / ทะเบียน / ลูกค้า",
+    category: "ประเภท",
+    gpsModel: "รุ่น GPS",
+    allCategories: "ทั้งหมด",
+    allModels: "ทุกรุ่น",
+    reload: "โหลดใหม่",
+    exportCsv: "Export CSV",
+    info: "แสดง {shown} จาก {total} กล่อง · โหลดเมื่อ {loadedAt}",
+    infoRef: "เทียบ MI / Provider ณ {at} (อัปเดตทุก {ttl} วิ)",
+    partial: "ดึงข้อมูลเทียบบาง source ไม่สำเร็จ: {sources} · ค่าเทียบของ source นั้นอาจว่างหรือเป็นข้อมูลเดิม",
+    page: "หน้า {page} · {size} กล่องต่อหน้า (แบ่งหน้าบนเว็บ)",
+    footnote:
+      "POST /device/laststatus · โหลดทั้งหมดครั้งเดียว ค้นหา / กรอง / แบ่งหน้าบนเว็บ · เทียบ MI / Provider = เวลาของระบบนั้น − recordTime ของ gateway (+ = gateway ตามไม่ทัน) · ไฮไลต์เมื่อต่างเกิน {sec} วิ · ตัวเลขสรุปจาก summary ของ API (มีตัวกรอง = นับบนเว็บ) · ข้อมูลเทียบจาก cache (ref)",
+    noData: "ไม่พบกล่องที่ตรงเงื่อนไข",
+    unit: { sec: "{n} วิ", min: "{n} นาที", hour: "{n} ชม.", day: "{n} วัน" },
+  },
 };
 
 export default th;

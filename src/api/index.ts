@@ -55,26 +55,29 @@ export const destinationApi = {
 };
 
 export const deviceApi = {
+  /** Every device with summary counts and the MI / Provider cache info. */
   lastStatus: () =>
-    getData<T.DeviceLastStatusResponse[]>("/device/laststatus", {
+    request<T.DeviceLastStatusEnvelope>("/device/laststatus", {
       method: "POST",
     }),
   master: () => getData<T.DeviceMasterResponse>("/device/master"),
   // TODO: no endpoints for these yet
   /** Number of destinations each device is sending to, keyed by mId. */
   masterDestinationCounts: () => notAvailable<Record<number, number>>(),
-  masterCreate: (_body: T.DeviceMasterSaveRequest) =>
-    notAvailable<T.MessageResponse>(),
-  /** Set deleted = 0 on a closed device and update its vehicle data. */
-  masterReopen: (_mId: number, _body: T.DeviceMasterSaveRequest) =>
-    notAvailable<T.MessageResponse>(),
-  /** A changed serialNo creates a new device (new mId) with the vehicle data copied. */
-  masterUpdate: (_mId: number, _body: T.DeviceMasterSaveRequest) =>
-    notAvailable<T.MessageResponse>(),
-  /** Set deleted = 1; history is kept. */
-  masterDelete: (_mId: number) => notAvailable<T.MessageResponse>(),
+  /** Create a device via POST /device/master/upsert (no mId). Required: serialNo, categoryId, GPSModelCode, provinceCode. */
+  masterCreate: (body: T.DeviceMasterSaveRequest) => deviceApi.masterUpsert(body),
+  /** Reopen a closed device via POST /device/master/upsert (deleted = 0) and update its vehicle data. */
+  masterReopen: (mId: number, body: T.DeviceMasterSaveRequest) =>
+    deviceApi.masterUpsert({ mId, ...body, deleted: 0 }),
+  /** Update a device via POST /device/master/upsert. A changed serialNo creates a new device (new mId) with the vehicle data copied. */
+  masterUpdate: (mId: number, body: T.DeviceMasterSaveRequest) =>
+    deviceApi.masterUpsert({ mId, ...body }),
+  /** Close a device via POST /device/master/upsert with only mId and deleted = 1; history is kept. */
+  masterDelete: (mId: number) => deviceApi.masterUpsert({ mId, deleted: 1 }),
   /** Update the device's data (Assign Destination, part 1); without `mId` it creates a device. */
-  masterUpsert: (body: T.DeviceMasterUpsertRequest) =>
+  masterUpsert: (
+    body: T.DeviceMasterUpsertRequest | { mId: number; deleted: number },
+  ) =>
     request<T.MessageResponse>("/device/master/upsert", {
       method: "POST",
       body,
