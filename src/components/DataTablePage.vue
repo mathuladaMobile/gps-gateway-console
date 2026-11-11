@@ -4,7 +4,12 @@ import { computed, ref, useSlots } from "vue";
 import { useI18n } from "vue-i18n";
 import { usePermission } from "@/composables/usePermission";
 import { tr } from "@/i18n";
-import { downloadExcel, formatDateTime, isDateKey } from "@/utils/format";
+import {
+  downloadExcel,
+  formatDateTime,
+  isDateKey,
+  orDash,
+} from "@/utils/format";
 
 const props = defineProps<{
   /** `title` may be an i18n key (e.g. `col.serialNo`); other titles are shown as is */
@@ -94,7 +99,12 @@ async function exportExcel() {
   <v-card>
     <v-card-text>
       <!-- Search criteria: top-aligned so the button stays level with the inputs when hints show below them -->
-      <v-row v-if="slots.filters || searchText" dense align="start" class="mb-1">
+      <v-row
+        v-if="slots.filters || searchText"
+        dense
+        align="start"
+        class="mb-1"
+      >
         <slot name="filters" />
         <v-col v-if="searchText" cols="auto">
           <v-btn
@@ -174,10 +184,10 @@ async function exportExcel() {
         <slot :name="name" v-bind="slotProps ?? {}" />
       </template>
       <template v-for="name in dateSlots" :key="name" #[name]="{ value }">
-        <span class="text-no-wrap">{{ formatDateTime(value) ?? "-" }}</span>
+        <span class="text-no-wrap">{{ orDash(formatDateTime(value)) }}</span>
       </template>
       <template v-for="name in plainSlots" :key="name" #[name]="{ value }">
-        {{ value ?? "-" }}
+        {{ orDash(value) }}
       </template>
       <template #item.actions="{ item }">
         <div class="d-flex justify-end ga-1">

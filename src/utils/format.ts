@@ -45,6 +45,9 @@ export function formatDateTime(value: unknown) {
   return d.isValid() ? d.format(DATE_TIME_FORMAT) : value
 }
 
+/** Table cell text: "-" for null, undefined and empty / blank strings. */
+export const orDash = (v: unknown) => (v == null || (typeof v === "string" && !v.trim()) ? "-" : v)
+
 /** Column keys that hold date/time values (recordTime, updatedAt, lastsentAt, utcTs, created_at...). */
 export const isDateKey = (key: string) => /(Time|At|Date|Ts)$/.test(key) || /^(time|date)$|_(time|at|date|ts)$/i.test(key)
 

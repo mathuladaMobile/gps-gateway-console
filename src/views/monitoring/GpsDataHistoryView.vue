@@ -14,6 +14,7 @@ import {
   defaultRange,
   headersFrom,
   MAX_RANGE_HOURS,
+  orDash,
   rangeHours,
   retentionMin,
   toApiDate,
@@ -25,9 +26,47 @@ const categoryId = ref<string>();
 const device = ref<HistoryDevice>();
 const [from, to] = defaultRange(1).map((v) => ref(v));
 const items = ref<Record<string, unknown>[]>([]);
-const headers = computed(() => headersFrom(items.value));
 const { loading, error, run } = useLoader();
-const { t } = useI18n();
+const { t, te } = useI18n();
+
+// Column order for the provider's fields; fields not listed follow in API order
+const COLUMN_ORDER = [
+  "recordTime",
+  "receiveTime",
+  "serialNumber",
+  "equipmentType",
+  "account_id",
+  "device_id",
+  "type_data",
+  "lat",
+  "lon",
+  "alt",
+  "speed",
+  "engine_status",
+  "mileage",
+  "event_code",
+  "event_input",
+  "record_no",
+  "driver_id",
+  "driver_title",
+  "driver_first_name",
+  "driver_surname",
+  "driver_personal_card_id",
+  "driver_card_expires",
+  "recordUnixTime",
+  "receiveUnixTime",
+];
+const rank = (key: string) => {
+  const i = COLUMN_ORDER.indexOf(key);
+  return i < 0 ? COLUMN_ORDER.length : i;
+};
+
+// Schemaless response: headers come from the data, named from `gpsCol` when known
+const headers = computed(() =>
+  headersFrom(items.value)
+    .sort((a, b) => rank(a.key) - rank(b.key))
+    .map((h) => ({ ...h, title: te(`gpsCol.${h.key}`) ? `gpsCol.${h.key}` : h.key })),
+);
 
 const valid = computed(
   () =>
@@ -139,6 +178,17 @@ onMounted(async () => {
       >
         {{ e.source }}: {{ e.message }}
       </v-alert>
+    </template>
+    <template #item.engine_status="{ value }">
+      <v-chip
+        v-if="typeof value === 'boolean'"
+        size="small"
+        variant="tonal"
+        :color="value ? 'success' : undefined"
+      >
+        {{ value ? t("common.on") : t("common.off") }}
+      </v-chip>
+      <span v-else>{{ orDash(value) }}</span>
     </template>
   </DataTablePage>
 </template>
