@@ -471,7 +471,6 @@ export default {
     allCategories: 'All',
     allModels: 'All models',
     reload: 'Reload',
-    exportCsv: 'Export CSV',
     info: 'Showing {shown} of {total} devices · loaded at {loadedAt}',
     infoRef: 'compared with MI / Provider at {at} (updated every {ttl}s)',
     partial: 'Some comparison sources failed: {sources} · their values may be empty or stale',

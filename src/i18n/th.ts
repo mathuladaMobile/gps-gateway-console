@@ -511,7 +511,6 @@ const th: typeof en = {
     allCategories: "ทั้งหมด",
     allModels: "ทุกรุ่น",
     reload: "โหลดใหม่",
-    exportCsv: "Export CSV",
     info: "แสดง {shown} จาก {total} กล่อง · โหลดเมื่อ {loadedAt}",
     infoRef: "เทียบ MI / Provider ณ {at} (อัปเดตทุก {ttl} วิ)",
     partial: "ดึงข้อมูลเทียบบาง source ไม่สำเร็จ: {sources} · ค่าเทียบของ source นั้นอาจว่างหรือเป็นข้อมูลเดิม",
