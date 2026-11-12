@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import dayjs from "dayjs";
-import { computed, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  onActivated,
+  onDeactivated,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from "vue";
 import { useI18n } from "vue-i18n";
 import {
   deviceApi,
@@ -11,17 +19,43 @@ import {
 import { useLoader } from "@/composables/useLoader";
 import { usePermission } from "@/composables/usePermission";
 import { tr } from "@/i18n";
-import { downloadExcel, formatDateTime, orDash } from "@/utils/format";
+import { downloadExcel, orDash } from "@/utils/format";
+import DeviceLastStatusDrawer from "./DeviceLastStatusDrawer.vue";
+import {
+  agoText,
+  dateOnly,
+  diffText,
+  secondsSince,
+  STATUS_COLOR,
+  SWIPE_IN,
+  timeOnly,
+} from "./lastStatus";
 
 type Row = DeviceLastStatusResponse;
 type StatusFilter = "ALL" | DeviceLastStatus | "MISMATCH";
 
 const PAGE_SIZE = 50;
+const REFRESH_SEC = 60;
 // Used until the first response arrives
 const DEFAULT_ONLINE_MIN = 5;
 const DEFAULT_MISMATCH_SEC = 60;
 
+// Several fields share a cell; `key` is what the column sorts by
 const headers = [
+  { title: "lastStatus.col.device", key: "serialNo" },
+  { title: "lastStatus.col.categoryModel", key: "categoryId" },
+  { title: "lastStatus.col.recordTime", key: "recordTime" },
+  { title: "col.status", key: "status" },
+  { title: "col.engine", key: "engineStatus" },
+  { title: "lastStatus.col.swipe", key: "swipeTime" },
+  { title: "lastStatus.col.diffMI", key: "diffMISec" },
+  { title: "lastStatus.col.diffProvider", key: "diffProviderSec" },
+  { title: "col.customer", key: "customerName" },
+  { title: "", key: "view", sortable: false, align: "end" as const },
+];
+
+// Excel keeps one field per column
+const exportHeaders = [
   { title: "col.status", key: "status" },
   { title: "col.serialNo", key: "serialNo" },
   { title: "col.plateNo", key: "plateNo" },
@@ -39,12 +73,6 @@ const headers = [
   { title: "col.longitude", key: "longitude" },
 ];
 
-const STATUS_COLOR: Record<DeviceLastStatus, string> = {
-  ONLINE: "success",
-  OFFLINE: "error",
-  NEVER: "grey",
-};
-
 const { t } = useI18n();
 const { can, item: menuItem } = usePermission();
 const { loading, error, run } = useLoader();
@@ -58,12 +86,66 @@ const status = ref<StatusFilter>("ALL");
 const page = ref(1);
 
 async function load() {
+  countdown.value = REFRESH_SEC;
   const r = await run(deviceApi.lastStatus);
   if (!r) return;
   res.value = r;
-  loadedAt.value = dayjs().format("HH:mm:ss");
+  loadedMs.value = Date.now();
+  loadedAt.value = dayjs(loadedMs.value).format("HH:mm:ss");
 }
-onMounted(load);
+
+// Auto refresh: tick every second, reload when the countdown hits 0.
+// Paused while a load is running, the browser tab is hidden or this page's
+// tab is in the background (the page is kept alive).
+const autoRefresh = ref(true);
+const countdown = ref(REFRESH_SEC);
+const active = ref(true);
+/** Ticks every second so the "x ago" texts stay fresh between loads */
+const now = ref(Date.now());
+const loadedMs = ref(Date.now());
+let timer: ReturnType<typeof setInterval> | undefined;
+
+onMounted(() => {
+  load();
+  timer = setInterval(() => {
+    if (!active.value || document.hidden) return;
+    now.value = Date.now();
+    if (!autoRefresh.value || loading.value) return;
+    if (--countdown.value <= 0) load();
+  }, 1000);
+});
+onUnmounted(() => clearInterval(timer));
+onActivated(() => (active.value = true));
+onDeactivated(() => (active.value = false));
+watch(autoRefresh, () => (countdown.value = REFRESH_SEC));
+
+// The API's ageSec is as of the load; add the time since then
+const ageNow = (r: Row) =>
+  (r.ageSec ?? 0) + Math.max(0, (now.value - loadedMs.value) / 1000);
+
+// Detail drawer, kept by serialNo so it follows the row across reloads
+const drawer = ref(false);
+const selectedSerial = ref<string>();
+const selected = computed(() =>
+  rows.value.find((r) => r.serialNo === selectedSerial.value),
+);
+function openDetail(r: Row) {
+  selectedSerial.value = r.serialNo;
+  drawer.value = true;
+}
+const onRowClick = (_e: Event, { item }: { item: Row }) => openDetail(item);
+const rowProps = ({ item }: { item: Row }) => ({
+  class: {
+    "row--clickable": true,
+    "row--selected": drawer.value && item.serialNo === selectedSerial.value,
+  },
+});
+
+function swipeCaption(r: Row) {
+  const sec = secondsSince(r.swipeTime, now.value);
+  const time = timeOnly(r.swipeTime);
+  return sec == null ? time : `${time} · ${agoText(sec)}`;
+}
 
 const rows = computed(() => res.value?.data ?? []);
 const summary = computed(() => res.value?.summary);
@@ -215,30 +297,10 @@ const partialSources = computed(() =>
     .join(", "),
 );
 
-const pageCount = computed(() =>
-  Math.max(1, Math.ceil(shown.value.length / PAGE_SIZE)),
-);
-
-function ageText(sec: number | null | undefined) {
-  if (sec == null) return "-";
-  const n = Math.max(0, sec);
-  if (n < 60) return t("lastStatus.unit.sec", { n });
-  if (n < 3600) return t("lastStatus.unit.min", { n: Math.floor(n / 60) });
-  if (n < 86400) return t("lastStatus.unit.hour", { n: Math.floor(n / 3600) });
-  return t("lastStatus.unit.day", { n: Math.floor(n / 86400) });
-}
-
-const diffText = (v: number | null) =>
-  v == null ? "-" : v > 0 ? `+${v}` : String(v);
-// + = gateway behind, - = other system older
+// + = gateway behind (error), - = other system older (warning)
+const diffColor = (v: number) => (v > 0 ? "error" : "warning");
 const diffClass = (v: number | null) =>
-  v == null
-    ? "text-medium-emphasis"
-    : off(v)
-      ? v > 0
-        ? "text-error font-weight-bold"
-        : "text-warning font-weight-bold"
-      : undefined;
+  v == null ? "text-medium-emphasis" : v === 0 ? "text-success" : undefined;
 
 const exporting = ref(false);
 
@@ -248,7 +310,7 @@ async function exportExcel() {
   try {
     await downloadExcel(
       `${menuItem.value?.name ?? "device-last-status"}-${stamp}.xlsx`,
-      headers.map((h) => ({ ...h, title: tr(h.title) })),
+      exportHeaders.map((h) => ({ ...h, title: tr(h.title) })),
       shown.value.map((r) => ({
         ...r,
         status: t(`lastStatus.status.${r.status}`),
@@ -327,7 +389,7 @@ async function exportExcel() {
               hide-details
             />
           </v-col>
-          <v-col cols="auto">
+          <v-col cols="auto" class="d-flex align-center ga-3">
             <v-btn
               variant="outlined"
               height="40"
@@ -337,6 +399,7 @@ async function exportExcel() {
             >
               {{ t("lastStatus.reload") }}
             </v-btn>
+            {{ t("lastStatus.autoRefreshIn", { sec: countdown }) }}
           </v-col>
         </v-row>
       </v-card-text>
@@ -390,51 +453,92 @@ async function exportExcel() {
         v-model:page="page"
         :headers="headers.map((h) => ({ ...h, title: tr(h.title) }))"
         :items="shown"
+        :items-per-page="PAGE_SIZE"
         :loading="loading"
         :no-data-text="t('lastStatus.noData')"
+        :row-props="rowProps"
         density="comfortable"
         hover
+        @click:row="onRowClick"
       >
-        <template #item.status="{ value }">
+        <template #item.serialNo="{ item }">
+          <div class="font-mono text-no-wrap">{{ item.serialNo }}</div>
+          <div class="text-caption text-medium-emphasis text-no-wrap">
+            {{ orDash(item.plateNo) }} {{ item.provinceName ?? "" }}
+          </div>
+        </template>
+        <template #item.categoryId="{ item }">
+          <v-chip
+            v-if="item.categoryId"
+            size="x-small"
+            variant="tonal"
+            color="primary"
+            class="font-weight-bold"
+          >
+            {{ item.categoryId }}
+          </v-chip>
+          <div class="text-caption text-medium-emphasis">
+            {{ orDash(item.gpsModelName) }}
+          </div>
+        </template>
+        <template #item.recordTime="{ value }">
+          <template v-if="value">
+            <div class="text-no-wrap">{{ dateOnly(value) }}</div>
+            <div class="text-caption text-medium-emphasis">
+              {{ timeOnly(value) }}
+            </div>
+          </template>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+        <template #item.status="{ item }">
           <v-chip
             size="small"
             variant="tonal"
-            :color="STATUS_COLOR[value as DeviceLastStatus]"
+            :color="STATUS_COLOR[item.status]"
           >
-            {{ t(`lastStatus.status.${value}`) }}
+            {{ t(`lastStatus.status.${item.status}`) }}
           </v-chip>
-        </template>
-        <template #item.serialNo="{ value }">
-          <span class="font-mono">{{ value }}</span>
-        </template>
-        <template
-          v-for="k in [
-            'plateNo',
-            'provinceName',
-            'customerName',
-            'categoryId',
-            'gpsModelName',
-            'latitude',
-            'longitude',
-          ]"
-          :key="k"
-          #[`item.${k}`]="{ value }"
-        >
-          {{ orDash(value) }}
-        </template>
-        <template
-          v-for="k in ['recordTime', 'receiveTime']"
-          :key="k"
-          #[`item.${k}`]="{ value }"
-        >
-          <span class="text-no-wrap">{{ orDash(formatDateTime(value)) }}</span>
-        </template>
-        <template #item.ageSec="{ item }">
-          <span
-            class="text-no-wrap"
-            :class="{ 'text-medium-emphasis': item.status === 'NEVER' }"
+          <div
+            v-if="item.status !== 'NEVER'"
+            class="text-caption text-medium-emphasis text-no-wrap"
           >
-            {{ item.status === "NEVER" ? "-" : ageText(item.ageSec) }}
+            {{ agoText(ageNow(item)) }}
+          </div>
+        </template>
+        <template #item.engineStatus="{ item }">
+          <v-chip
+            v-if="item.status !== 'NEVER'"
+            size="small"
+            variant="tonal"
+            :color="item.engineStatus ? 'success' : undefined"
+          >
+            {{
+              t(item.engineStatus ? "lastStatus.engine.on" : "lastStatus.engine.off")
+            }}
+          </v-chip>
+          <span v-else class="text-medium-emphasis">—</span>
+        </template>
+        <template #item.swipeTime="{ item }">
+          <template v-if="item.swipeTime">
+            <v-chip
+              size="small"
+              variant="tonal"
+              :color="item.swipeType === SWIPE_IN ? 'success' : 'warning'"
+            >
+              {{
+                t(
+                  item.swipeType === SWIPE_IN
+                    ? "lastStatus.swipe.in"
+                    : "lastStatus.swipe.out",
+                )
+              }}
+            </v-chip>
+            <div class="text-caption text-medium-emphasis text-no-wrap">
+              {{ swipeCaption(item) }}
+            </div>
+          </template>
+          <span v-else class="text-body-2 text-disabled">
+            {{ t("lastStatus.swipe.none") }}
           </span>
         </template>
         <template
@@ -442,19 +546,30 @@ async function exportExcel() {
           :key="k"
           #[`item.${k}`]="{ value }"
         >
-          <span class="tabular" :class="diffClass(value)">{{
-            diffText(value)
-          }}</span>
-        </template>
-        <template #item.engineStatus="{ item, value }">
           <v-chip
-            v-if="item.status !== 'NEVER'"
+            v-if="off(value)"
             size="small"
-            :color="value ? 'success' : 'grey'"
+            variant="tonal"
+            :color="diffColor(value)"
+            class="font-mono font-weight-bold"
           >
-            {{ t(value ? "common.on" : "common.off") }}
+            {{ diffText(value) }}
           </v-chip>
-          <span v-else>-</span>
+          <span
+            v-else
+            class="font-mono text-no-wrap"
+            :class="diffClass(value)"
+          >
+            {{ diffText(value) }}
+          </span>
+        </template>
+        <template #item.customerName="{ value }">
+          <div class="customer">{{ orDash(value) }}</div>
+        </template>
+        <template #item.view="{ item }">
+          <v-btn size="small" variant="outlined" @click.stop="openDetail(item)">
+            {{ t("lastStatus.view") }}
+          </v-btn>
         </template>
       </v-data-table>
     </v-card>
@@ -462,6 +577,14 @@ async function exportExcel() {
     <p class="text-body-2 text-medium-emphasis mb-0">
       {{ t("lastStatus.footnote", { sec: mismatchSec }) }}
     </p>
+
+    <DeviceLastStatusDrawer
+      v-model="drawer"
+      :device="selected"
+      :stale-sec="mismatchSec"
+      :now="now"
+      :loaded-at="loadedAt"
+    />
   </div>
 </template>
 
@@ -479,5 +602,15 @@ async function exportExcel() {
 }
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+.customer {
+  min-width: 120px;
+  max-width: 180px;
+}
+:deep(.row--selected) {
+  background: rgba(var(--v-theme-primary), 0.08);
+}
+:deep(.row--clickable) {
+  cursor: pointer;
 }
 </style>

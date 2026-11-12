@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { deviceApi, type DLTHistoryResponse, type ProxyList } from '@/api'
 import DataTablePage from '@/components/DataTablePage.vue'
 import { useI18n } from 'vue-i18n'
@@ -52,6 +53,20 @@ async function load() {
 onMounted(async () => {
   devices.value = (await run(deviceApi.dltHistoryInfo))?.device ?? []
 })
+
+// ?mId=... (e.g. from Device Last Status) selects that device and searches the default range.
+// Watched, not read once, because the page is kept alive between visits.
+const route = useRoute()
+watch(
+  () => route.query.mId,
+  (v) => {
+    const id = Number(v)
+    if (typeof v !== 'string' || !v || !Number.isFinite(id)) return
+    mId.value = id
+    load()
+  },
+  { immediate: true },
+)
 </script>
 
 <template>

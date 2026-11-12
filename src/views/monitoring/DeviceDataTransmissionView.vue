@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import { useRoute } from "vue-router";
 import { deviceApi, type DevicesResponse } from "@/api";
 import DataTablePage from "@/components/DataTablePage.vue";
 import { useI18n } from "vue-i18n";
@@ -54,6 +55,19 @@ async function load() {
 onMounted(async () => {
   devices.value = (await run(deviceApi.transmissionInfo))?.devices ?? [];
 });
+
+// ?serial=... (e.g. from Device Last Status) selects that device and loads it.
+// Watched, not read once, because the page is kept alive between visits.
+const route = useRoute();
+watch(
+  () => route.query.serial,
+  (serial) => {
+    if (typeof serial !== "string" || !serial) return;
+    serials.value = [serial];
+    load();
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
