@@ -173,6 +173,22 @@ export const menu: MenuGroup[] = [
         component: () => import("@/views/proxy/AssignDestinationView.vue"),
       },
       {
+        title: "DeviceRegistration",
+        path: "/proxy/device-registration",
+        name: "proxy-device-registration",
+        roles: ALL,
+        permissions: viewExport(ALL),
+        component: () => import("@/views/proxy/DeviceRegistrationView.vue"),
+      },
+      {
+        title: "DeviceRegistration Log",
+        path: "/proxy/device-registration-log",
+        name: "proxy-device-registration-log",
+        roles: ALL,
+        permissions: viewExport(ALL),
+        component: () => import("@/views/proxy/DeviceRegistrationLogView.vue"),
+      },
+      {
         title: "Proxy Support",
         path: "/proxy/support",
         name: "proxy-support",

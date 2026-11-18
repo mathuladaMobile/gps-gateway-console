@@ -5,6 +5,14 @@ import { i18n } from "@/i18n";
 export * from "./http";
 export type * from "./types";
 
+/** Query string from the set (non-empty) values of `params`. */
+const queryString = (params: object) =>
+  new URLSearchParams(
+    Object.entries(params)
+      .filter(([, v]) => v != null && v !== "")
+      .map(([k, v]) => [k, String(v)]),
+  ).toString();
+
 /** Placeholder for endpoints the backend doesn't provide yet. */
 const notAvailable = <R>(): Promise<R> =>
   Promise.reject(new ApiError(i18n.global.t("common.apiNotAvailable"), 501));
@@ -65,15 +73,21 @@ export const deviceApi = {
   /** Number of destinations each device is sending to, keyed by mId. */
   masterDestinationCounts: () => notAvailable<Record<number, number>>(),
   /** Create a device via POST /device/master/upsert (no mId). Required: serialNo, categoryId, GPSModelCode, provinceCode. */
-  masterCreate: (body: T.DeviceMasterSaveRequest) => deviceApi.masterUpsert(body),
+  masterCreate: (body: T.DeviceMasterSaveRequest) =>
+    deviceApi.masterUpsert(body),
   /** Reopen a closed device via POST /device/master/upsert (deleted = 0) and update its vehicle data. */
   masterReopen: (mId: number, body: T.DeviceMasterSaveRequest) =>
     deviceApi.masterUpsert({ mId, ...body, deleted: 0 }),
   /** Update a device via POST /device/master/upsert. A changed serialNo creates a new device (new mId) with the vehicle data copied. */
   masterUpdate: (mId: number, body: T.DeviceMasterSaveRequest) =>
     deviceApi.masterUpsert({ mId, ...body }),
-  /** Close a device via POST /device/master/upsert with only mId and deleted = 1; history is kept. */
-  masterDelete: (mId: number) => deviceApi.masterUpsert({ mId, deleted: 1 }),
+
+  // ต้องปิดส่งทุกปลายทางก่อน · เปิดกลับมาได้ด้วย POST /device/master/upsert (serial เดิม → RESTORE)
+  masterDelete: (mId: number) =>
+    request<T.MessageResponse>("/device/master/" + mId, {
+      method: "DELETE",
+    }),
+
   /** Update the device's data (Assign Destination, part 1); without `mId` it creates a device. */
   masterUpsert: (
     body: T.DeviceMasterUpsertRequest | { mId: number; deleted: number },
@@ -99,6 +113,21 @@ export const deviceApi = {
   /** ADD / UPDATE / REMOVE at the destination (shared by every proxy). */
   destinationRegister: (body: T.DestinationRegisterRequest) =>
     getData<T.RegisterResult>("/device/destination/register", {
+      method: "POST",
+      body,
+    }),
+
+  /** Devices registered at a destination now (DeviceRegistration), newest change first. */
+  registrations: (q: T.DeviceRegistrationQuery) =>
+    getData<T.DeviceRegistrationPage>(
+      `/device/destination/registrations?${queryString(q)}`,
+    ),
+  /** Filter options for the registration log. */
+  registrationLogInfo: () =>
+    getData<T.RegistrationLogInfo>("/device/destination/registrations/log"),
+  /** Every ADD / UPDATE / REMOVE call to a destination, successful or not. */
+  registrationLog: (body: T.RegistrationLogQuery) =>
+    getData<T.RegistrationLogPage>("/device/destination/registrations/log", {
       method: "POST",
       body,
     }),

@@ -67,6 +67,8 @@ const th: typeof en = {
     "device-provider": "ผู้ให้บริการ",
     "device-provider-wialon-lite": "ผู้ให้บริการ (Wialon Lite)",
     "proxy-assign-destination": "Assign Destination",
+    "proxy-device-registration": "DeviceRegistration",
+    "proxy-device-registration-log": "DeviceRegistration Log",
     "proxy-support": "Proxy Support",
     "user-register": "ลงทะเบียนผู้ใช้",
     "user-change-password": "เปลี่ยนรหัสผ่านผู้ใช้",
@@ -302,6 +304,50 @@ const th: typeof en = {
       finished:
         "Duplicate เสร็จ · กล่องใหม่ {serial} ส่ง {n} ปลายทาง · ปิดส่งกล่องเดิมแล้ว",
     },
+  },
+  devReg: {
+    subtitle:
+      "กล่องที่ register กับปลายทางแล้ว (สถานะปัจจุบัน) · แก้ล่าสุดก่อน · ดูอย่างเดียว · ประวัติการยิงแต่ละครั้งดูที่",
+    all: "ทั้งหมด",
+    allProxies: "ทุก proxy",
+    devices: "กล่อง",
+    searchPlaceholder: "Serial / ทะเบียน / regRef / payload (เช่น unit_id)",
+    col: {
+      device: "กล่อง",
+      deviceId: "deviceID / IMEI",
+      lastAction: "Action ล่าสุด",
+      registeredAt: "Register เมื่อ",
+      registeredBy: "Register โดย",
+      updatedBy: "แก้โดย",
+    },
+    view: "ดู",
+    detailSub: "ข้อมูล register ปัจจุบันที่ปลายทางนี้",
+    payload: "Payload ที่ส่ง",
+    copy: "คัดลอก",
+    toLog: "ดูประวัติการยิง (DeviceRegistration Log)",
+    noData: "ไม่พบกล่องที่ตรงเงื่อนไข",
+    footnote:
+      "GET /device/destination/registrations ?proxyCode & search & page & pageSize (50, สูงสุด 500) · การ์ดด้านบนใช้ byProxy (มีเฉพาะหน้า 1 และไม่ขึ้นกับตัวกรอง) · กล่องที่ REMOVE แล้วจะไม่อยู่ในหน้านี้",
+  },
+  devRegLog: {
+    subtitle:
+      "ประวัติการยิง API register ไปปลายทาง (ADD / UPDATE / REMOVE) ทั้งสำเร็จและไม่สำเร็จ · ดูอย่างเดียว",
+    quick: "ช่วงด่วน",
+    today: "วันนี้",
+    days: "{n} วัน",
+    custom: "กำหนดเอง",
+    allDevices: "ทุกกล่อง",
+    searchPlaceholder: "Serial / ทะเบียน / payload (เช่น unit_id)",
+    col: { result: "ผล", message: "ข้อความ", by: "โดย" },
+    response: "Response",
+    records: "รายการ",
+    pageCounts: "หน้านี้ สำเร็จ {success} · ไม่สำเร็จ {failed}",
+    notSearched: "เลือกตัวกรองแล้วกด ค้นหา",
+    noData: "ไม่พบรายการที่ตรงเงื่อนไข",
+    rangeTooLong: "ช่วงเวลาต้องไม่เกิน {days} วัน",
+    infoError: "โหลดตัวเลือกไม่สำเร็จ: {error}",
+    footnote:
+      "เปิดหน้า: GET /device/destination/registrations/log โหลดตัวเลือก (proxies / devices = กล่องที่มี log ย้อนหลัง 1 ปี / actions / results) อย่างเดียว ยังไม่ยิง POST · เลือกช่วงเวลา / กล่อง / Proxy / Action / ผล / คำค้นหา แล้วกด ค้นหา (หรือ Enter) ถึงจะยิง POST /device/destination/registrations/log · ตัวกรองที่ไม่ได้เลือกไม่ใส่ใน body · เลือกกล่องแล้ว Proxy เหลือเฉพาะที่กล่องนั้นเคยมี log · เปิดจากหน้า DeviceRegistration จะเลือกกล่อง + proxy ให้และค้นหาทันที · ช่วงเวลาไม่เกิน {days} วัน",
   },
   proxySupport: {
     subtitle:

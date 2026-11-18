@@ -391,6 +391,7 @@ export interface DeviceMasterSaveRequest {
   accountId: string;
   deviceId: string;
   chassis: string;
+  imeiNo: string;
 }
 
 /** POST /device/master/upsert: with `mId` updates that device, without it creates one. */
@@ -458,6 +459,100 @@ export interface DestinationAssignResult {
   mId: number;
   proxyCode: string;
 }
+
+/** A page of rows from a server-paginated endpoint. */
+export interface Paged<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** GET /device/destination/registrations: one device's current registration at one destination. */
+export interface DeviceRegistrationRow {
+  mId: number;
+  serialNo: string;
+  plateNo: string | null;
+  deviceId: string | null;
+  imeiNo: string | null;
+  categoryId: string | null;
+  proxyCode: string;
+  regRef: string | null;
+  /** ADD | UPDATE (REMOVEd devices are not listed) */
+  lastAction: RegisterAction;
+  /** Last sent register data */
+  payload: Record<string, unknown> | null;
+  registeredAt: string | null;
+  registeredBy: string | null;
+  updatedAt: string | null;
+  updatedBy: string | null;
+}
+
+export interface DeviceRegistrationQuery {
+  proxyCode?: string;
+  search?: string;
+  page: number;
+  pageSize: number;
+}
+
+export interface DeviceRegistrationPage extends Paged<DeviceRegistrationRow> {
+  /** Registered devices per proxy; only on page 1 and not affected by the filters */
+  byProxy?: { proxyCode: string; count: number }[];
+}
+
+export type RegistrationResult = "SUCCESS" | "FAILED";
+
+/** GET /device/destination/registrations/log: options for the filters. */
+export interface RegistrationLogInfo {
+  proxies: string[];
+  /** Devices with a log in the last year, with the proxies they have a log at */
+  devices: {
+    mId: number;
+    serialNo: string;
+    plateNo: string | null;
+    proxyCodes: string[];
+  }[];
+  actions: RegisterAction[];
+  results: RegistrationResult[];
+}
+
+/** POST /device/destination/registrations/log: `from` / `to` are required, other filters left empty are omitted. */
+export interface RegistrationLogQuery {
+  /** `YYYY-MM-DD HH:mm:ss` */
+  from: string;
+  /** `YYYY-MM-DD HH:mm:ss` */
+  to: string;
+  mId?: number;
+  proxyCode?: string;
+  action?: RegisterAction;
+  result?: RegistrationResult;
+  search?: string;
+  page: number;
+  pageSize: number;
+}
+
+/** One call to a destination's register API (DeviceRegistrationLog). */
+export interface RegistrationLogRow {
+  logId: number;
+  mId: number;
+  serialNo: string;
+  deviceId: string | null;
+  imeiNo: string | null;
+  plateNo: string | null;
+  proxyCode: string;
+  action: RegisterAction;
+  result: RegistrationResult;
+  /** null when the request never got an HTTP answer (timeout, validation) */
+  httpStatus: number | null;
+  /** Why the call failed; empty on success */
+  errorMessage: string | null;
+  payload: unknown;
+  response: unknown;
+  createdAt: string;
+  createdBy: string | null;
+}
+
+export type RegistrationLogPage = Paged<RegistrationLogRow>;
 
 /** GET /device/destination/register/info: the device's current registration at a destination. */
 export interface RegistrationInfo {

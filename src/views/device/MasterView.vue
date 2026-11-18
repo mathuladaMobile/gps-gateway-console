@@ -147,6 +147,7 @@ const blankForm = (): DeviceMasterSaveRequest => ({
   accountId: "",
   deviceId: "",
   chassis: "",
+  imeiNo: "",
 });
 const form = reactive(blankForm());
 
@@ -163,6 +164,7 @@ function fillForm(d?: DevicesResponse) {
       accountId: d.accountId,
       deviceId: d.deviceId,
       chassis: d.chassis,
+      imeiNo: d.imeiNo,
     },
   );
 }
@@ -250,7 +252,11 @@ function pickDevice(d: ProviderDevice) {
   if (row?.deleted) return fillForm(row);
   // New device: prefill what the provider knows
   fillForm();
-  Object.assign(form, { serialNo: d.serialNumber, categoryId: addCat.value });
+  Object.assign(form, {
+    serialNo: d.serialNumber,
+    imeiNo: d.serialNumber,
+    categoryId: addCat.value,
+  });
   if (isFEL(d))
     Object.assign(form, {
       accountId: d.accountID,
@@ -525,15 +531,6 @@ onMounted(load);
           >
             {{ name }}: {{ e }}
           </v-alert>
-          <v-alert
-            v-if="master && !destCounts"
-            type="info"
-            variant="tonal"
-            density="compact"
-            class="mt-2"
-          >
-            {{ t("master.noCountApi") }}
-          </v-alert>
         </template>
 
         <template #item.serialNo="{ item }">
@@ -791,32 +788,6 @@ onMounted(load);
                 {{ target.provinceName }}
               </div>
             </v-sheet>
-            <!-- <v-alert
-              v-if="target.tmCount"
-              type="warning"
-              variant="tonal"
-              density="compact"
-              :title="t('master.delete.blockedTitle', { n: target.tmCount })"
-            >
-              <i18n-t keypath="master.delete.blockedText" scope="global">
-                <template #link>
-                  <router-link :to="assignRoute" class="font-weight-bold">{{
-                    t("menu.proxy-assign-destination")
-                  }}</router-link>
-                </template>
-              </i18n-t>
-            </v-alert>
-            <v-alert
-              v-else-if="target.tmCount === undefined"
-              type="warning"
-              variant="tonal"
-              density="compact"
-            >
-              {{ t("master.delete.unknown") }}
-            </v-alert>
-            <div v-else class="text-body-2">
-              {{ t("master.delete.allowed") }}
-            </div> -->
           </template>
           <!-- {{ target }} -->
 
