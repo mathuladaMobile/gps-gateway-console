@@ -24,7 +24,7 @@ import {
   toApiDate,
   toInputDate,
 } from "@/utils/format";
-import RegistrationDetailDialog from "./RegistrationDetailDialog.vue";
+import RegistrationLogDrawer from "./RegistrationLogDrawer.vue";
 import {
   ACTION_COLOR,
   datePart,
@@ -226,39 +226,17 @@ const pageCounts = computed(() => {
   return { success: rows.value.length - failed, failed };
 });
 
-// Detail dialog
-const dialog = ref(false);
+// Detail drawer
+const drawer = ref(false);
 const selected = ref<Row>();
 function openDetail(r: Row) {
   selected.value = r;
-  dialog.value = true;
+  drawer.value = true;
 }
-const detailFields = computed(() => {
-  const r = selected.value;
-  if (!r) return [];
-  return [
-    { label: "logId", value: r.logId, mono: true },
-    { label: t("common.time"), value: stamp(r.createdAt) },
-    {
-      label: t("devReg.col.device"),
-      value: `${r.serialNo} · ${orDash(r.plateNo)} · mId ${r.mId}`,
-    },
-    { label: "deviceID", value: r.deviceId, mono: true },
-    { label: "IMEI", value: r.imeiNo, mono: true },
-    { label: "Action", value: r.action },
-    {
-      label: t("devRegLog.col.result"),
-      value: r.result,
-      color: RESULT_COLOR[r.result],
-    },
-    { label: "HTTP", value: r.httpStatus, mono: true },
-    {
-      label: t("devRegLog.col.message"),
-      value: r.errorMessage,
-      color: r.result === "FAILED" ? "error" : undefined,
-    },
-    { label: t("devRegLog.col.by"), value: r.createdBy },
-  ];
+const rowProps = ({ item }: { item: Row }) => ({
+  class: {
+    "row--selected": drawer.value && item.logId === selected.value?.logId,
+  },
 });
 
 const exporting = ref(false);
@@ -454,7 +432,6 @@ async function exportExcel() {
         }}</v-alert>
       </v-card-text>
 
-      {{ res }}
       <v-data-table-server
         :page="page"
         :items-per-page="pageSize"
@@ -465,6 +442,7 @@ async function exportExcel() {
         :loading="loading"
         :no-data-text="res ? t('devRegLog.noData') : t('devRegLog.notSearched')"
         item-value="logId"
+        :row-props="rowProps"
         density="comfortable"
         hover
         @update:options="onOptions"
@@ -517,14 +495,9 @@ async function exportExcel() {
         </template>
         <template #item.createdBy="{ value }">{{ orDash(value) }}</template>
         <template #item.view="{ item }">
-          <v-btn
-            v-tooltip="t('devReg.view')"
-            icon="mdi-eye-outline"
-            size="small"
-            variant="outlined"
-            :aria-label="t('devReg.view')"
-            @click="openDetail(item)"
-          />
+          <v-btn size="small" variant="outlined" @click="openDetail(item)">
+            {{ t("devReg.view") }}
+          </v-btn>
         </template>
       </v-data-table-server>
     </v-card>
@@ -533,19 +506,14 @@ async function exportExcel() {
       {{ t("devRegLog.footnote", { days: MAX_DAYS }) }}
     </p>
 
-    <RegistrationDetailDialog
-      v-model="dialog"
-      :title="`${selected?.action ?? ''} · ${selected?.serialNo ?? ''} → ${selected?.proxyCode ?? ''}`"
-      :fields="detailFields"
-      :blocks="[
-        { label: t('devReg.payload'), value: selected?.payload },
-        { label: t('devRegLog.response'), value: selected?.response },
-      ]"
-    />
+    <RegistrationLogDrawer v-model="drawer" :row="selected" />
   </div>
 </template>
 
 <style scoped>
+:deep(.row--selected) {
+  background: rgba(var(--v-theme-primary), 0.06);
+}
 .message {
   min-width: 220px;
   max-width: 420px;

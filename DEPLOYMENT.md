@@ -48,7 +48,7 @@ If there are TypeScript errors, the build fails and no `dist/` is produced. Fix 
 To check the build locally before you deploy:
 
 ```bash
-npm run preview     # serves dist/ at http://localhost:4173
+npm run preview     # serves dist/ at http://localhost:3000
 ```
 
 `vite preview` does not proxy `/api`, so API calls will fail there. Use it only to check that pages load.
@@ -173,6 +173,26 @@ Use the Nginx config from section 4 as `deploy/nginx.conf`, with `root /usr/shar
 docker build -t gps-gateway-console:1.0.0 .
 docker run -d --name gps-console -p 8080:80 --restart unless-stopped gps-gateway-console:1.0.0
 ```
+
+---
+
+## 6b. Optional: pm2 (no Nginx)
+
+[server.mjs](server.mjs) serves `dist/` with the SPA fallback and forwards `/api` to the API with the `Origin` header removed, like the Nginx config above. It uses only Node built-ins. [ecosystem.config.cjs](ecosystem.config.cjs) runs it under pm2.
+
+```bash
+npm i -g pm2
+npm ci
+npm run pm2:start      # build, then start "gps-console" on http://<host>:8080
+npm run pm2:restart    # after git pull: rebuild and restart
+npm run pm2:logs
+```
+
+Change `PORT`, `HOST` or `API_TARGET` in `ecosystem.config.cjs`, then run `pm2 restart gps-console --update-env`.
+
+`npm run pm2:dev` runs the Vite dev server (port 3000) under pm2 instead.
+
+To start on boot, run `pm2 save`. On Linux, also run `pm2 startup` and follow what it prints. Windows has no `pm2 startup`; use a package such as `pm2-installer` or a scheduled task that runs `pm2 resurrect`.
 
 ---
 

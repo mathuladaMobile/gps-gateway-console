@@ -480,8 +480,10 @@ export interface DeviceRegistrationRow {
   regRef: string | null;
   /** ADD | UPDATE (REMOVEd devices are not listed) */
   lastAction: RegisterAction;
-  /** Last sent register data */
+  /** Body of the last successful register call */
   payload: Record<string, unknown> | null;
+  /** Destination's answer to that call */
+  response: unknown;
   registeredAt: string | null;
   registeredBy: string | null;
   updatedAt: string | null;

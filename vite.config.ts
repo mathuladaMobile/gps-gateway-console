@@ -10,7 +10,10 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
     },
+    // host: true = listen on every network interface, so phones on the same Wi-Fi can open it
+    preview: { host: true, port: 3000 },
     server: {
+      host: true,
       port: 3000,
       proxy: env.VITE_API_PROXY_TARGET
         ? {

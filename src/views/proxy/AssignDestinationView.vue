@@ -87,6 +87,7 @@ async function saveVehicle() {
       GPSModelCode: d.GPSModelCode,
       accountId: d.accountId,
       deviceId: d.deviceId,
+      imeiNo: d.imeiNo,
       ...vehicle,
     });
     // Keep the device list in step with what was saved
@@ -261,26 +262,31 @@ const KINDS: Kind[] = ["api", "reg", "none"];
           </v-btn>
         </div>
 
-        <v-autocomplete
-          v-model="serialInput"
-          :items="serialOptions"
-          item-title="serialNo"
-          item-value="serialNo"
-          :custom-filter="filterDevice"
-          :label="t('col.serial')"
-          class="font-mono"
-          density="comfortable"
-          prepend-inner-icon="mdi-magnify"
-          :error-messages="searchError"
-          :loading="loading"
-          clearable
-          auto-select-first
-          @update:model-value="search"
-        >
-          <template #item="{ props: itemProps, item }">
-            <v-list-item v-bind="itemProps" :subtitle="`${item.raw.plateNo} · ${item.raw.GPSModelName}`" />
-          </template>
-        </v-autocomplete>
+        <div class="d-flex ga-2 align-start">
+          <v-autocomplete
+            v-model="serialInput"
+            :items="serialOptions"
+            item-title="serialNo"
+            item-value="serialNo"
+            :custom-filter="filterDevice"
+            :label="t('col.serial')"
+            class="font-mono flex-1-1"
+            density="comfortable"
+            prepend-inner-icon="mdi-magnify"
+            :error-messages="searchError"
+            :loading="loading"
+            clearable
+            auto-select-first
+            @update:model-value="search"
+          >
+            <template #item="{ props: itemProps, item }">
+              <v-list-item v-bind="itemProps" :subtitle="`${item.raw.plateNo} · ${item.raw.GPSModelName}`" />
+            </template>
+          </v-autocomplete>
+          <v-btn variant="outlined" color="primary" height="48" class="font-weight-bold" @click="search">
+            {{ t("common.search") }}
+          </v-btn>
+        </div>
 
         <template v-if="device">
           <div class="info-grid">
@@ -427,9 +433,11 @@ const KINDS: Kind[] = ["api", "reg", "none"];
   align-items: center;
   justify-content: space-between;
   gap: 8px 12px;
+  min-height: 56px;
   padding: 2px 14px 2px 6px;
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
   border-radius: 10px;
+  background: rgb(var(--v-theme-surface));
 }
 .dest-row--on {
   border-color: rgba(var(--v-theme-primary), 0.35);

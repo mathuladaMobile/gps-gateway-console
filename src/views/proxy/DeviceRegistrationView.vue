@@ -11,7 +11,7 @@ import { useLoader } from "@/composables/useLoader";
 import { usePermission } from "@/composables/usePermission";
 import { tr } from "@/i18n";
 import { downloadExcel, orDash } from "@/utils/format";
-import RegistrationDetailDialog from "./RegistrationDetailDialog.vue";
+import DeviceRegistrationDrawer from "./DeviceRegistrationDrawer.vue";
 import {
   ACTION_COLOR,
   fetchAll,
@@ -49,6 +49,7 @@ const exportHeaders = [
   { title: "col.updatedAt", key: "updatedAt" },
   { title: "devReg.col.updatedBy", key: "updatedBy" },
   { title: "devReg.payload", key: "payload" },
+  { title: "Response", key: "response" },
 ];
 
 const { t } = useI18n();
@@ -117,41 +118,43 @@ const proxyItems = computed(() => [
   ...byProxy.value.map((p) => ({ title: p.proxyCode, value: p.proxyCode })),
 ]);
 
-// Detail dialog
-const dialog = ref(false);
+// "All" + one card per proxy; the selected one is highlighted
+const cards = computed(() => [
+  {
+    code: null as string | null,
+    label: t("devReg.all"),
+    count: allCount.value,
+    on: proxyCode.value == null,
+  },
+  ...byProxy.value.map((p) => ({
+    code: p.proxyCode as string | null,
+    label: p.proxyCode,
+    count: p.count,
+    on: proxyCode.value === p.proxyCode,
+  })),
+]);
+
+const filtered = computed(() => !!proxyCode.value || !!(q.value ?? "").trim());
+function clearFilters() {
+  proxyCode.value = null;
+  q.value = "";
+  apply();
+}
+
+// Detail drawer; a row is one device at one proxy
+const drawer = ref(false);
 const selected = ref<Row>();
+const rowKey = (r: Row) => `${r.mId}:${r.proxyCode}`;
 function openDetail(r: Row) {
   selected.value = r;
-  dialog.value = true;
+  drawer.value = true;
 }
-const detailFields = computed(() => {
-  const r = selected.value;
-  if (!r) return [];
-  return [
-    { label: "mId", value: r.mId, mono: true },
-    { label: t("col.plateNo"), value: r.plateNo },
-    { label: "deviceID", value: r.deviceId, mono: true },
-    { label: "IMEI", value: r.imeiNo, mono: true },
-    { label: t("col.category"), value: r.categoryId },
-    { label: "regRef", value: r.regRef, mono: true },
-    { label: t("devReg.col.lastAction"), value: r.lastAction },
-    {
-      label: t("devReg.col.registeredAt"),
-      value: `${stamp(r.registeredAt)} · ${orDash(r.registeredBy)}`,
-    },
-    {
-      label: t("col.updatedAt"),
-      value: `${stamp(r.updatedAt)} · ${orDash(r.updatedBy)}`,
-    },
-  ];
-});
-const logLink = computed(() => ({
-  name: "proxy-device-registration-log",
-  query: {
-    mId: String(selected.value?.mId ?? ""),
-    proxyCode: selected.value?.proxyCode ?? "",
+const rowProps = ({ item }: { item: Row }) => ({
+  class: {
+    "row--selected":
+      drawer.value && !!selected.value && rowKey(item) === rowKey(selected.value),
   },
-}));
+});
 
 const exporting = ref(false);
 
@@ -189,36 +192,24 @@ async function exportExcel() {
       </router-link>
     </p>
 
-    <div class="stats">
-      <v-card
+    <section class="stats" :aria-label="t('devReg.perProxy')">
+      <button
+        v-for="c in cards"
+        :key="c.code ?? 'all'"
+        type="button"
         class="stat"
-        :class="{ 'stat--active': proxyCode == null }"
-        @click="pickProxy(null)"
+        :class="{ 'stat--active': c.on }"
+        :aria-pressed="c.on"
+        @click="pickProxy(c.code)"
       >
-        <v-card-text>
-          <div class="text-body-2 text-medium-emphasis">
-            {{ t("devReg.all") }}
-          </div>
-          <div class="text-h5 font-weight-bold tabular mt-1 text-primary">
-            {{ allCount.toLocaleString() }}
-          </div>
-        </v-card-text>
-      </v-card>
-      <v-card
-        v-for="p in byProxy"
-        :key="p.proxyCode"
-        class="stat"
-        :class="{ 'stat--active': proxyCode === p.proxyCode }"
-        @click="pickProxy(p.proxyCode)"
-      >
-        <v-card-text>
-          <div class="text-body-2 text-medium-emphasis">{{ p.proxyCode }}</div>
-          <div class="text-h5 font-weight-bold tabular mt-1">
-            {{ p.count.toLocaleString() }}
-          </div>
-        </v-card-text>
-      </v-card>
-    </div>
+        <span class="text-body-2 text-medium-emphasis">{{ c.label }}</span>
+        <span
+          class="stat-num tabular"
+          :class="{ 'text-primary': c.on }"
+          >{{ c.count.toLocaleString() }}</span
+        >
+      </button>
+    </section>
 
     <v-card>
       <v-card-text>
@@ -257,6 +248,11 @@ async function exportExcel() {
               @click="apply"
             >
               {{ t("common.search") }}
+            </v-btn>
+          </v-col>
+          <v-col v-if="filtered" cols="auto">
+            <v-btn variant="outlined" height="40" @click="clearFilters">
+              {{ t("devReg.clearFilters") }}
             </v-btn>
           </v-col>
         </v-row>
@@ -298,7 +294,8 @@ async function exportExcel() {
         :items-length="total"
         :loading="loading"
         :no-data-text="t('devReg.noData')"
-        item-value="mId"
+        :item-value="rowKey"
+        :row-props="rowProps"
         density="comfortable"
         hover
         @update:options="onOptions"
@@ -315,7 +312,9 @@ async function exportExcel() {
             {{ orDash(item.imeiNo) }}
           </div>
         </template>
-        <template #item.categoryId="{ value }">{{ orDash(value) }}</template>
+        <template #item.categoryId="{ value }">
+          <span class="font-mono">{{ orDash(value) }}</span>
+        </template>
         <template #item.proxyCode="{ value }">
           <span class="font-mono font-weight-bold">{{ value }}</span>
         </template>
@@ -345,14 +344,9 @@ async function exportExcel() {
           </div>
         </template>
         <template #item.view="{ item }">
-          <v-btn
-            v-tooltip="t('devReg.view')"
-            icon="mdi-eye-outline"
-            size="small"
-            variant="outlined"
-            :aria-label="t('devReg.view')"
-            @click="openDetail(item)"
-          />
+          <v-btn size="small" variant="outlined" @click="openDetail(item)">
+            {{ t("devReg.view") }}
+          </v-btn>
         </template>
       </v-data-table-server>
     </v-card>
@@ -361,39 +355,43 @@ async function exportExcel() {
       {{ t("devReg.footnote") }}
     </p>
 
-    <RegistrationDetailDialog
-      v-model="dialog"
-      :title="`${selected?.serialNo ?? ''} · ${selected?.proxyCode ?? ''}`"
-      :subtitle="t('devReg.detailSub')"
-      :fields="detailFields"
-      :blocks="[{ label: t('devReg.payload'), value: selected?.payload }]"
-    >
-      <div>
-        <v-btn
-          variant="tonal"
-          color="primary"
-          prepend-icon="mdi-history"
-          :to="logLink"
-          @click="dialog = false"
-        >
-          {{ t("devReg.toLog") }}
-        </v-btn>
-      </div>
-    </RegistrationDetailDialog>
+    <DeviceRegistrationDrawer v-model="drawer" :row="selected" />
   </div>
 </template>
 
 <style scoped>
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
 }
 .stat {
-  border: 2px solid transparent;
+  min-height: 64px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  background: rgb(var(--v-theme-surface));
+  color: inherit;
+  cursor: pointer;
+}
+.stat:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
 }
 .stat--active {
   border-color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.04);
+}
+.stat-num {
+  font-size: 22px;
+  font-weight: 700;
+}
+:deep(.row--selected) {
+  background: rgba(var(--v-theme-primary), 0.06);
 }
 .tabular {
   font-variant-numeric: tabular-nums;
