@@ -14,7 +14,7 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 8080,
-        HOST: "0.0.0.0",
+        HOST: "192.168.10.169",
         API_TARGET: "http://192.168.10.154:9000",
       },
     },
