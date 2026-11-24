@@ -188,7 +188,7 @@ export default {
     back: 'Back to Dashboard',
   },
   dashboard: {
-    subtitle: 'Data delivery health right now · problems first',
+    subtitle: 'Data delivery health right now (problems first)',
     updatedAt: 'Updated {time} · auto refresh every {sec}s',
     refresh: 'Refresh',
     issues: {
