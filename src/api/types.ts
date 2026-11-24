@@ -632,3 +632,93 @@ export interface HealthResponse {
   go_version: string;
   status: string;
 }
+
+// dashboard
+export interface DashboardSummary {
+  /** tmId × category with bound devices */
+  destinations: number;
+  alert: number;
+  wait: number;
+  ok: number;
+  devices: number;
+  online: number;
+  offline: number;
+  /** Categories with needAlert */
+  genAlert: number;
+  /** ERROR / STALE apps; counted for SUPER_ADMIN / ADMIN only */
+  appProblems: number;
+  /** alert + wait + genAlert + appProblems */
+  problems: number;
+}
+
+export interface DashboardModelStat {
+  categoryId: string;
+  model: string;
+  total: number;
+  online: number;
+  offline: number;
+}
+
+export interface DashboardGenerator {
+  /** FEL | FEP */
+  categoryId: string;
+  /** Latest data of the category, `YYYY-MM-DD HH:mm:ss.SSS` */
+  maxRecordTime: string | null;
+  /** Minutes from maxRecordTime to now (DB time) */
+  agoMinute: number | null;
+  needAlert: boolean;
+  devices: number;
+  online: number;
+  offline: number;
+  models: DashboardModelStat[];
+}
+
+export type DashboardAlertStatus = "ALERT" | "WAIT" | "OK";
+
+export interface DashboardDestination {
+  alertStatus: DashboardAlertStatus;
+  proxyCode: string;
+  tmId: number;
+  tmType: string;
+  categoryId: string;
+  vehicleCount: number;
+  lastSuccessTime: string | null;
+  /** Minutes since the last successful send */
+  successDiffM: number | null;
+  /** Minutes since the latest data waiting to be sent */
+  recordDiffM: number | null;
+}
+
+export interface DashboardApp {
+  appId: string;
+  appName: string;
+  /** ERROR | STALE */
+  health: "ERROR" | "STALE";
+  healthNote: string;
+  lastStatus: string;
+  agoSec: number;
+}
+
+/** GET /dashboard */
+export interface DashboardResponse {
+  summary: DashboardSummary;
+  onlineMinutes: number;
+  generators: DashboardGenerator[];
+  /** Every destination, ALERT → WAIT → OK */
+  destinations: DashboardDestination[];
+  /** Options for the "by destination" proxy dropdown */
+  proxyCodes: string[];
+  /** null unless SUPER_ADMIN / ADMIN */
+  apps: { problems: DashboardApp[]; total: number } | null;
+}
+
+/** GET /dashboard/proxy-models?proxyCode= */
+export interface DashboardProxyModels {
+  proxyCode: string;
+  /** tmType of the open send lines */
+  lines: string[];
+  total: number;
+  online: number;
+  offline: number;
+  models: DashboardModelStat[];
+}

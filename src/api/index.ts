@@ -53,6 +53,14 @@ export const systemApi = {
   health: () => request<T.HealthResponse>("/health", { public: true }),
 };
 
+export const dashboardApi = {
+  get: () => getData<T.DashboardResponse>("/dashboard"),
+  proxyModels: (proxyCode: string) =>
+    getData<T.DashboardProxyModels>(
+      `/dashboard/proxy-models?${queryString({ proxyCode })}`,
+    ),
+};
+
 export const categoryApi = {
   list: () => getData<T.CategoryResponse[]>("/category"),
 };
