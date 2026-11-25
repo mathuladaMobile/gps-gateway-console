@@ -253,6 +253,17 @@ export default {
       title: 'Apps with problems',
       ofCount: '{n} of {total}',
       link: 'Go to App Status →',
+      names: {
+        felite_eventdata_archive: 'FElite event data archive',
+        felite_eventdata_clear: 'FElite event data cleanup',
+        felite_master: 'FElite master',
+        master_data_worker: 'Master data worker',
+        master_db_maintenance_worker: 'Master DB maintenance worker',
+        master_gateway: 'GPS Gateway Master (generator + transmitter)',
+        master_generatorfel: 'Master generator (FEL)',
+        master_generatorfep: 'Master generator (FEP)',
+        master_transmitter: 'Master transmitter',
+      },
     },
     footnote:
       'GET /dashboard · every role · summary numbers only (no destination replies / config) · "Apps with problems" is sent only to SUPER_ADMIN, ADMIN',

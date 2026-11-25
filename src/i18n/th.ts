@@ -254,6 +254,17 @@ const th: typeof en = {
       title: "แอปที่มีปัญหา",
       ofCount: "{n} จาก {total}",
       link: "ไป App Status →",
+      names: {
+        felite_eventdata_archive: "FElite เก็บถาวรข้อมูล event",
+        felite_eventdata_clear: "FElite ล้างข้อมูล event",
+        felite_master: "FElite master",
+        master_data_worker: "Worker ข้อมูล master",
+        master_db_maintenance_worker: "Worker ดูแลฐานข้อมูล master",
+        master_gateway: "GPS Gateway Master (generator + transmitter)",
+        master_generatorfel: "Master generator (FEL)",
+        master_generatorfep: "Master generator (FEP)",
+        master_transmitter: "Master transmitter",
+      },
     },
     footnote:
       "GET /dashboard · ทุก role · ตัวเลขสรุปอย่างเดียว (ไม่มีข้อความตอบกลับจากปลายทาง / config) · ส่วน \"แอปที่มีปัญหา\" ส่งมาเฉพาะ SUPER_ADMIN, ADMIN",

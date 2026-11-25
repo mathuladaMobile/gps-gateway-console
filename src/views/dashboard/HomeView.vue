@@ -30,7 +30,12 @@ const STATUS_COLOR: Record<DashboardAlertStatus, string> = {
   OK: "success",
 };
 
-const { t } = useI18n();
+const { t, te } = useI18n();
+
+const appLabel = (a: { appId: string; appName: string }) => {
+  const key = `dashboard.apps.names.${a.appId}`;
+  return te(key) ? t(key) : a.appName;
+};
 const { loading, error, run } = useLoader();
 const proxyLoader = useLoader();
 
@@ -543,7 +548,7 @@ function scrollToIssues() {
         >
           <v-card-text>
             <div class="d-flex align-center ga-2">
-              <span class="text-subtitle-1 font-weight-bold">{{ a.appName }}</span>
+              <span class="text-subtitle-1 font-weight-bold">{{ appLabel(a) }}</span>
               <v-spacer />
               <v-chip
                 size="small"
