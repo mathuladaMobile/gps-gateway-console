@@ -214,7 +214,7 @@ export const menu: MenuGroup[] = [
         title: "Change User Password",
         path: "/users/change-password",
         name: "user-change-password",
-        roles: SA,
+        roles: SA_A,
         component: () => import("@/views/users/ChangeUserPasswordView.vue"),
       },
       {
@@ -260,6 +260,14 @@ export const menu: MenuGroup[] = [
         roles: SA_A,
         component: () =>
           import("@/views/system-monitor/TransactionLogView.vue"),
+      },
+      {
+        title: "Audit Log",
+        path: "/system-monitor/audit-log",
+        name: "sm-audit-log",
+        roles: SA_A,
+        permissions: viewExport(SA_A),
+        component: () => import("@/views/system-monitor/AuditLogView.vue"),
       },
     ],
   },

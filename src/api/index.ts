@@ -43,6 +43,11 @@ export const userApi = {
       method: "POST",
       body: { username, newPassword },
     }),
+  /** Create a user; they must change the password on first login. */
+  register: (body: T.UserRegisterRequest) =>
+    getData<T.UserListItem>("/users/register", { method: "POST", body }),
+  /** Roles the caller may assign (lower than their own). */
+  roles: () => getData<T.RoleOption[]>("/roles"),
 };
 
 export const menuApi = {

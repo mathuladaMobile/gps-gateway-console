@@ -25,6 +25,36 @@ export interface LoginResponse {
   username: string;
 }
 
+// users
+/** POST /users/register body (camelCase). */
+export interface UserRegisterRequest {
+  username: string;
+  password: string;
+  fullName: string;
+  email?: string;
+  /** One role code, e.g. ["OPERATOR"] */
+  roles: string[];
+}
+
+/** User row returned by /users endpoints (snake_case). */
+export interface UserListItem {
+  user_id: number;
+  username: string;
+  full_name: string;
+  email: string | null;
+  status: string;
+  roles: string[];
+  role_level: number;
+  must_change_password: boolean;
+}
+
+/** GET /roles: roles below the caller's level (roles.role_level). */
+export interface RoleOption {
+  code: string;
+  name: string;
+  role_level?: number;
+}
+
 export interface RefreshResponse {
   access_token: string;
   refresh_token: string;
