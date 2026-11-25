@@ -63,30 +63,13 @@ function excelCell(v: unknown) {
 }
 
 export async function downloadExcel(filename: string, headers: { title: string; key: string }[], items: Record<string, unknown>[]) {
-  // Loaded on demand to keep exceljs out of the main bundle
-  const { default: ExcelJS } = await import('exceljs')
-  const wb = new ExcelJS.Workbook()
-  const ws = wb.addWorksheet('Sheet1')
-  ws.columns = headers.map((h) => ({ header: h.title, key: h.key }))
-  for (const i of items) {
-    ws.addRow(headers.map((h) => excelCell(isDateKey(h.key) ? formatDateTime(i[h.key]) : i[h.key])))
-  }
-  ws.getRow(1).font = { bold: true }
-  ws.views = [{ state: 'frozen', ySplit: 1 }]
-  // Fit column widths to the longest value (capped)
-  ws.columns.forEach((col) => {
-    let max = 10
-    col.eachCell?.({ includeEmpty: false }, (c) => {
-      max = Math.max(max, String(c.value ?? '').length + 2)
-    })
-    col.width = Math.min(max, 60)
-  })
-
-  const buf = await wb.xlsx.writeBuffer()
-  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(a.href)
+  // Loaded on demand to keep the xlsx writer out of the main bundle
+  const { default: writeExcelFile } = await import('write-excel-file/browser')
+  const rows = items.map((i) => headers.map((h) => excelCell(isDateKey(h.key) ? formatDateTime(i[h.key]) : i[h.key])))
+  const header = headers.map((h) => ({ value: h.title, fontWeight: 'bold' as const }))
+  // Fit column widths to the longest value (min 10, max 60)
+  const columns = headers.map((h, c) => ({
+    width: Math.min(60, rows.reduce((max, r) => Math.max(max, String(r[c]).length + 2), Math.max(10, h.title.length + 2))),
+  }))
+  await writeExcelFile([header, ...rows], { sheet: 'Sheet1', columns, stickyRowsCount: 1 }).toFile(filename)
 }
