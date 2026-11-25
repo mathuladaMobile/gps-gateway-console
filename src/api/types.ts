@@ -48,6 +48,19 @@ export interface UserListItem {
   must_change_password: boolean;
 }
 
+/** GET /roles row as sent by the backend (field names not fixed yet). */
+export interface RoleResponse {
+  code?: string;
+  role_code?: string;
+  roleCode?: string;
+  name?: string;
+  role_name?: string;
+  roleName?: string;
+  role_level?: number;
+  roleLevel?: number;
+  level?: number;
+}
+
 /** GET /roles: roles below the caller's level (roles.role_level). */
 export interface RoleOption {
   code: string;

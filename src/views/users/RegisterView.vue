@@ -18,27 +18,28 @@ const errs = ref<Partial<Record<Field, string>>>({});
 const apiErr = ref<{ code: string; message: string } | null>(null);
 const created = ref<UserListItem | null>(null);
 
-// ---- Roles (GET /roles, falls back to the roles below SUPER_ADMIN) ----
-const FALLBACK: RoleOption[] = [
-  { code: "ADMIN", name: "Administrator", role_level: 1 },
-  { code: "OPERATOR", name: "Operator", role_level: 2 },
-  { code: "VIEWER", name: "Viewer", role_level: 3 },
-];
+// ---- Roles: GET /roles (only roles below the caller), lowest level first ----
 const roles = ref<RoleOption[]>([]);
 const rolesLoading = ref(false);
+const rolesError = ref("");
 
-onMounted(async () => {
+async function loadRoles() {
   rolesLoading.value = true;
+  rolesError.value = "";
   try {
-    const list = await userApi.roles();
-    roles.value = list?.length ? list : FALLBACK;
-  } catch {
-    roles.value = FALLBACK;
+    roles.value = [...((await userApi.roles()) ?? [])].sort(
+      (a, b) => (a.role_level ?? 0) - (b.role_level ?? 0),
+    );
+  } catch (e) {
+    roles.value = [];
+    rolesError.value = e instanceof Error ? e.message : String(e);
   } finally {
     rolesLoading.value = false;
   }
-  if (!role.value) role.value = roles.value.find((r) => r.code === "OPERATOR")?.code ?? roles.value[0]?.code ?? "";
-});
+  // keep the pick if still offered, else default to the first role
+  if (!roles.value.some((r) => r.code === role.value)) role.value = roles.value[0]?.code ?? "";
+}
+onMounted(loadRoles);
 
 // ---- Validation (same limits as POST /users/register) ----
 const fields = computed(() => [
@@ -230,6 +231,16 @@ const roleName = (code: string) => roles.value.find((r) => r.code === code)?.nam
         </v-card-title>
         <v-card-text>
           <v-progress-linear v-if="rolesLoading" indeterminate class="mb-2" />
+          <v-alert v-else-if="rolesError" type="error" variant="tonal" density="compact" class="mb-2">
+            <div class="d-flex flex-wrap align-center ga-2">
+              <span>GET /roles · {{ rolesError }}</span>
+              <v-spacer />
+              <v-btn size="small" variant="outlined" @click="loadRoles">{{ t("common.refresh") }}</v-btn>
+            </div>
+          </v-alert>
+          <div v-else-if="!roles.length" class="text-body-2 text-medium-emphasis mb-2">
+            {{ t("register.noRoles") }}
+          </div>
           <v-radio-group v-model="role" hide-details @update:model-value="edit('role')">
             <div class="grid roles">
               <label

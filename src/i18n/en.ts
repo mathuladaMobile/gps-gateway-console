@@ -208,6 +208,7 @@ export default {
     },
     role: 'Role',
     roleHint: 'From GET /roles · only roles below yours · pick one',
+    noRoles: 'No roles you can assign',
     reset: 'Clear form',
     submit: 'Create user',
     err: {

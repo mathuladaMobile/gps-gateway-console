@@ -47,7 +47,12 @@ export const userApi = {
   register: (body: T.UserRegisterRequest) =>
     getData<T.UserListItem>("/users/register", { method: "POST", body }),
   /** Roles the caller may assign (lower than their own). */
-  roles: () => getData<T.RoleOption[]>("/roles"),
+  roles: async () =>
+    (await getData<T.RoleResponse[]>("/roles")).map((r) => ({
+      code: r.code ?? r.role_code ?? r.roleCode ?? "",
+      name: r.name ?? r.role_name ?? r.roleName ?? r.code ?? r.role_code ?? r.roleCode ?? "",
+      role_level: r.role_level ?? r.roleLevel ?? r.level,
+    })).filter((r) => r.code) as T.RoleOption[],
 };
 
 export const menuApi = {

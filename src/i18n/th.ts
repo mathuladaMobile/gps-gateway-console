@@ -209,6 +209,7 @@ const th: typeof en = {
     },
     role: "Role",
     roleHint: "จาก GET /roles · เฉพาะ role ที่ต่ำกว่าคุณ · เลือก 1 role",
+    noRoles: "ไม่มี role ที่คุณกำหนดให้ได้",
     reset: "ล้างฟอร์ม",
     submit: "สร้างผู้ใช้",
     err: {
