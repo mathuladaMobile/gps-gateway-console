@@ -3,7 +3,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import vuetify from './plugins/vuetify'
-import { setUnauthorizedHandler } from './api'
+import { setPasswordChangeRequiredHandler, setUnauthorizedHandler } from './api'
 import { i18n } from './i18n'
 import { useAuthStore } from './stores/auth'
 
@@ -14,6 +14,13 @@ setUnauthorizedHandler(() => {
   useAuthStore().logout()
   if (router.currentRoute.value.name !== 'login') {
     router.push({ name: 'login', query: { redirect: router.currentRoute.value.fullPath } })
+  }
+})
+
+// API says the password must be changed first (e.g. first login) -> change-password page
+setPasswordChangeRequiredHandler(() => {
+  if (router.currentRoute.value.path !== '/account/change-password') {
+    router.push('/account/change-password')
   }
 })
 

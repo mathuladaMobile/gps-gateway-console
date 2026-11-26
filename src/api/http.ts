@@ -19,6 +19,12 @@ export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorized = handler
 }
 
+let onPasswordChangeRequired: () => void = () => {}
+/** Called when the API answers with code PASSWORD_CHANGE_REQUIRED (e.g. redirect to change-password). */
+export function setPasswordChangeRequiredHandler(handler: () => void) {
+  onPasswordChangeRequired = handler
+}
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
@@ -74,6 +80,8 @@ export async function request<T>(path: string, opts: RequestOptions = {}, retrie
   } catch {
     // non-JSON response
   }
+
+  if (json?.code === 'PASSWORD_CHANGE_REQUIRED') onPasswordChangeRequired()
 
   if (!res.ok || json?.success === false) {
     throw new ApiError(json?.message || res.statusText || 'Request failed', res.status, json?.code)
