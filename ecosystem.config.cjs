@@ -18,7 +18,7 @@ module.exports = {
         PORT: 8080,
         // 0.0.0.0 = every interface. Don't put a specific IP here: on a machine without that IP, listen fails (EADDRNOTAVAIL)
         HOST: "0.0.0.0",
-        API_TARGET: "http://192.168.10.154:9000",
+        API_TARGET: "http://localhost:9001",
       },
     },
     {
