@@ -10,7 +10,7 @@
     "type-check": "vue-tsc --noEmit",
     "start": "node server.mjs",
     "pm2:start": "npm run build && pm2 start ecosystem.config.cjs --only gps-console",
-    "pm2:restart": "npm run build && pm2 restart gps-console",
+    "pm2:restart": "npm run build && pm2 restart ecosystem.config.cjs --only gps-console --update-env",
     "pm2:dev": "pm2 start ecosystem.config.cjs --only gps-console-dev",
     "pm2:stop": "pm2 stop ecosystem.config.cjs",
     "pm2:logs": "pm2 logs",

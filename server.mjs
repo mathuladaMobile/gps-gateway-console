@@ -107,6 +107,11 @@ http
     }
     serveStatic(req, res);
   })
+  .on("error", (e) => {
+    // e.g. EADDRINUSE (port taken) or EADDRNOTAVAIL (HOST isn't an IP of this machine)
+    console.error(`Cannot listen on ${HOST}:${PORT}: ${e.code ?? ""} ${e.message}`);
+    process.exit(1);
+  })
   .listen(PORT, HOST, () => {
     console.log(`GPS Gateway Console on http://${HOST}:${PORT} · /api -> ${API_TARGET.origin}`);
   });

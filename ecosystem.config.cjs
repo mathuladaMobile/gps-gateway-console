@@ -7,6 +7,8 @@ module.exports = {
       name: "gps-console",
       script: "server.mjs",
       cwd: __dirname,
+      // fork mode: pm2's cluster mode doesn't start ESM (.mjs) scripts reliably, especially on Windows
+      exec_mode: "fork",
       instances: 1,
       autorestart: true,
       max_memory_restart: "300M",
@@ -14,7 +16,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT: 8080,
-        HOST: "192.168.10.169",
+        // 0.0.0.0 = every interface. Don't put a specific IP here: on a machine without that IP, listen fails (EADDRNOTAVAIL)
+        HOST: "0.0.0.0",
         API_TARGET: "http://192.168.10.154:9000",
       },
     },
