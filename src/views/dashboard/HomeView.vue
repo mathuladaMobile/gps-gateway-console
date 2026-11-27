@@ -127,6 +127,13 @@ const pct = (part: number, total: number) =>
   total ? (part / total) * 100 : 0;
 const pctText = (part: number, total: number) =>
   `${pct(part, total).toFixed(1)}%`;
+/** Online / Offline % rounded to 0.1 so the pair always adds up to exactly 100.0%. */
+function splitPct(online: number, offline: number) {
+  const total = online + offline;
+  if (!total) return { online: "0.0%", offline: "0.0%" };
+  const on = Math.round((online / total) * 1000) / 10;
+  return { online: `${on.toFixed(1)}%`, offline: `${(100 - on).toFixed(1)}%` };
+}
 
 function timeOf(value: string | null) {
   if (!value) return "-";
@@ -301,12 +308,12 @@ function scrollToIssues() {
               <span>
                 <v-icon icon="mdi-circle" color="success" size="10" class="mr-1" />
                 Online <b>{{ fmt(g.online) }}</b>
-                <span class="text-medium-emphasis">({{ pctText(g.online, g.devices) }})</span>
+                <span class="text-medium-emphasis">({{ splitPct(g.online, g.offline).online }})</span>
               </span>
               <span>
                 <v-icon icon="mdi-circle" color="grey" size="10" class="mr-1" />
                 Offline <b>{{ fmt(g.offline) }}</b>
-                <span class="text-medium-emphasis">({{ pctText(g.offline, g.devices) }})</span>
+                <span class="text-medium-emphasis">({{ splitPct(g.online, g.offline).offline }})</span>
               </span>
             </div>
 
@@ -397,40 +404,28 @@ function scrollToIssues() {
                 <th class="text-end">{{ t("dashboard.col.total") }}</th>
                 <th class="text-end">{{ t("dashboard.col.online") }}</th>
                 <th class="text-end">{{ t("dashboard.col.offline") }}</th>
-                <th>{{ t("dashboard.byDest.onlinePct") }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="!proxyModels.models?.length">
-                <td colspan="6" class="text-center text-medium-emphasis">
+                <td colspan="5" class="text-center text-medium-emphasis">
                   {{ t("dashboard.byDest.noData") }}
                 </td>
               </tr>
               <tr v-for="m in proxyModels.models" :key="`${m.categoryId}-${m.model}`">
                 <td class="font-weight-bold text-no-wrap">{{ m.model }}</td>
                 <td>{{ m.categoryId }}</td>
-                <td class="text-end tabular">{{ fmt(m.total) }}</td>
-                <td class="text-end tabular" :class="{ 'text-success': m.online }">
-                  {{ fmt(m.online) }}
+                <td class="text-end tabular text-no-wrap">
+                  {{ fmt(m.total) }}
+                  <span class="text-medium-emphasis">({{ pctText(m.total, proxyModels.total) }})</span>
                 </td>
-                <td
-                  class="text-end tabular"
-                  :class="{ 'text-error font-weight-bold': m.offline > m.online }"
-                >
-                  {{ fmt(m.offline) }}
+                <td class="text-end tabular text-no-wrap">
+                  <span :class="{ 'text-success': m.online }">{{ fmt(m.online) }}</span>
+                  <span class="text-medium-emphasis"> ({{ splitPct(m.online, m.offline).online }})</span>
                 </td>
-                <td>
-                  <div class="d-flex align-center ga-3">
-                    <v-progress-linear
-                      :model-value="pct(m.online, m.total)"
-                      color="success"
-                      height="6"
-                      rounded
-                    />
-                    <span class="text-body-2 text-medium-emphasis tabular pct">
-                      {{ pctText(m.online, m.total) }}
-                    </span>
-                  </div>
+                <td class="text-end tabular text-no-wrap">
+                  <span :class="{ 'text-error font-weight-bold': m.offline > m.online }">{{ fmt(m.offline) }}</span>
+                  <span class="text-medium-emphasis"> ({{ splitPct(m.online, m.offline).offline }})</span>
                 </td>
               </tr>
             </tbody>

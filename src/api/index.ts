@@ -38,6 +38,25 @@ export const authApi = {
 };
 
 export const userApi = {
+  /** Users whose role is below the caller's; the backend returns ACTIVE only unless `status` is given. */
+  list: async (status?: T.UserStatus | "ALL"): Promise<T.UserListResponse> => {
+    const qs = queryString({ status });
+    const data = await getData<T.UserListResponse | T.UserListItem[]>(`/users${qs ? `?${qs}` : ""}`);
+    // Older backends sent a plain array
+    return Array.isArray(data) ? { items: data } : { items: data?.items ?? [], summary: data?.summary };
+  },
+  /** Replace the user's role (one role code, e.g. ["OPERATOR"]). */
+  updateRoles: (userId: number, roles: string[]) =>
+    request<T.MessageResponse>(`/users/${userId}/roles`, {
+      method: "PUT",
+      body: { roles },
+    }),
+  /** Enable (ACTIVE) or disable (INACTIVE) a user. */
+  setStatus: (userId: number, status: T.UserStatus) =>
+    request<T.MessageResponse>(`/users/${userId}/status`, {
+      method: "PATCH",
+      body: { status },
+    }),
   changePassword: (username: string, newPassword: string) =>
     request<T.MessageResponse>("/users/change-password", {
       method: "POST",

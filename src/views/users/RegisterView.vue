@@ -2,6 +2,7 @@
 import { computed, onMounted, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { ApiError, userApi, type RoleOption, type UserListItem } from "@/api";
+import { generatePassword, PASSWORD_MIN, passwordChecks } from "@/utils/password";
 
 const { t } = useI18n();
 
@@ -74,15 +75,12 @@ const pwError = computed(() =>
   !(tried.value || pwTouched.value) ? "" : !password.value ? t("common.required") : "",
 );
 
-const rules = computed(() => {
-  const pw = password.value;
-  return [
-    { ok: pw.length >= 8, text: t("register.rule.length", { n: 8 }) },
-    { ok: /[a-z]/.test(pw), text: t("register.rule.lower") },
-    { ok: /[A-Z]/.test(pw), text: t("register.rule.upper") },
-    { ok: /[0-9]/.test(pw), text: t("register.rule.digit") },
-  ];
-});
+const rules = computed(() =>
+  passwordChecks(password.value).map((c) => ({
+    ok: c.ok,
+    text: t(`register.rule.${c.key}`, { n: PASSWORD_MIN }),
+  })),
+);
 const pwOk = computed(() => rules.value.every((r) => r.ok));
 
 function edit(k: Field) {
@@ -90,17 +88,8 @@ function edit(k: Field) {
   apiErr.value = null;
 }
 
-/** Random password that meets the policy (one of each class + 6 more, shuffled). */
 function generate() {
-  const sets = ["abcdefghijkmnpqrstuvwxyz", "ABCDEFGHJKLMNPQRSTUVWXYZ", "23456789"];
-  const all = sets.join("");
-  const pick = (s: string) => s[crypto.getRandomValues(new Uint32Array(1))[0] % s.length];
-  const chars = [...sets.map(pick), ...Array.from({ length: 7 }, () => pick(all))];
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
-    [chars[i], chars[j]] = [chars[j], chars[i]];
-  }
-  password.value = chars.join("");
+  password.value = generatePassword();
   showPw.value = true;
   apiErr.value = null;
 }

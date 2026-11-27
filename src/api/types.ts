@@ -46,6 +46,23 @@ export interface UserListItem {
   roles: string[];
   role_level: number;
   must_change_password: boolean;
+  last_login_at?: string | null;
+}
+
+/** users.status values; anything other than ACTIVE counts as disabled. */
+export type UserStatus = "ACTIVE" | "INACTIVE";
+
+/** Counts per status across every user the caller may see (ignores the status filter). */
+export interface UserListSummary {
+  ACTIVE?: number;
+  INACTIVE?: number;
+  ALL?: number;
+}
+
+/** GET /users data: rows for the requested status + counts for all statuses. */
+export interface UserListResponse {
+  items: UserListItem[];
+  summary?: UserListSummary;
 }
 
 /** GET /roles row as sent by the backend (field names not fixed yet). */
